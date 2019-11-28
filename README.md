@@ -11,7 +11,7 @@ game_state:
 
 Entity:
 
-static: (bzw ich glaub static vererbung funktioniert so nicht, stattdessen vielleicht konstante virtual Funktionen)
+static: (bzw ich glaub static vererbung funktioniert so nicht, stattdessen vielleicht konstante virtual Funktionen, oder die dinger alle zu template argumenten machen?)
 *  minerals (in Hundertstel?) : int
 *  gas (in Hundertstel?) : int
 *  supply : int
@@ -21,6 +21,8 @@ static: (bzw ich glaub static vererbung funktioniert so nicht, stattdessen viell
 *  producer\_destiny : enum(consumed\_at\_start/consumed\_at\_end/occupied/freed)
 *  producer : int (id des producer)
 *  requirements : collection<int> (disjunktive liste der ids der Entities die erlauben die entsprechende Entity zu bauen)
+
+
 
 
 non-static:
