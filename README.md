@@ -20,7 +20,7 @@ static: (bzw ich glaub static vererbung funktioniert so nicht, stattdessen viell
 *  productionTime : int
 *  producer\_destiny : enum(consumed\_at\_start/consumed\_at\_end/occupied/freed)
 *  producer : int (id des producer)
-*  requirements : collection<int> (disjunktive liste der)
+*  requirements : collection<int> (disjunktive liste der ids der Entities die erlauben die entsprechende Entity zu bauen)
 
 
 non-static:
