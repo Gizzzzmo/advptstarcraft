@@ -4,8 +4,10 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <exception>
 
 enum Destiny {consumed_at_start, consumed_at_end, occupied, freed};
+enum Race {Protoss, Zerg, Terran};
 
 
 class AbstractEntity{
@@ -45,7 +47,37 @@ public:
     producee(producee), producer(producer), time_done(time_done){}
 };
 
-template<int class_id, int mins, int gs, int sppl, int sppl_p, int prd, Destiny prd_d, long req, int maxOcc, int bldtime>
+class noMineralsException : public std::exception {
+    const char * what () const throw () {
+      return "noMins";
+   }
+};
+
+class noGasException : public std::exception {
+    const char * what () const throw () {
+      return "noGas";
+   }
+};
+
+class noSupplyException : public std::exception {
+    const char * what () const throw () {
+      return "noSupply";
+   }
+};
+
+class noProdcuerAvailableException : public std::exception {
+    const char * what () const throw () {
+      return "noProducer";
+   }
+};
+
+class requirementNotFulfilledException : public std::exception {
+    const char * what () const throw () {
+      return "noProducer";
+   }
+};
+
+template<Race race, int class_id, int mins, int gs, int sppl, int sppl_p, long prd, Destiny prd_d, int req, int maxOcc, int bldtime>
 class Entity : public AbstractEntity{
 private:
     static auto getCounter() -> unsigned int& {
@@ -88,15 +120,21 @@ public:
         return s;
     }
 
-    static ProductionEntry* check_and_build(std::map<int , std::vector<AbstractEntity*>> &entities_done){
+    static ProductionEntry* check_and_build(std::map<int , std::vector<AbstractEntity*>> &entities_done, unsigned int& minerals, unsigned int& gas, unsigned int& supply_used, unsigned int& supply){
+        if(minerals < mins throw noMineralsException();
+        if(gas<  gs) throw noGasException();
+        if(sppl < supply-supply_used) throw noSupplyException();
+        //TODO implement bismask behavior
+        //TODO implement requirements
         std::vector<AbstractEntity> possible_producers = entities_done.find(prd);
         for(AbstractEntity* producer : possible_producers){
             if(producer->check_and_occupy()){
+                //TODO: Kill producer if consume_at_start
                 AbstractEntity* producee = new Entity<class_id, mins, gs, sppl, sppl_p, prd, prd_d, req, maxOcc, bldtime>;
                 ProductionEntry* e = new ProductionEntry(producee, producer, bldtime);
                 return e;
             }
         }
-        return nullptr;
+        throw noProducerAvailableException();
     }
 };
