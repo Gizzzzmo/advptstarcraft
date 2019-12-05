@@ -21,7 +21,7 @@ public:
     virtual int supply_provided() const = 0;
     virtual int producer() const = 0;
     virtual Destiny producer_destiny() const = 0;
-    virtual long requirements() const = 0;
+    virtual int requirement() const = 0;
     virtual std::string id() const = 0;
 
     bool check_and_occupy(){
@@ -109,7 +109,7 @@ public:
     Destiny producer_destiny() const override{
         return prd_d;
     }
-    long requirements() const override{
+    int requirement() const override{
         return req;
     }
     std::string id() const override{
