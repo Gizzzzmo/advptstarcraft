@@ -47,6 +47,13 @@ int main(){
         if(built){
             std::getline(std::cin, line);
         }
+        std::vector <ProductionEntry*> finished_list = process_production_list();
+        if (!finished_list.empty()) {
+            generate_json = true;
+            //TODO generate productionfinishedjson
+        }
+
+        
         build_and_check f = build_map[line];
         ProductionEntry* entry;
         try{
@@ -68,11 +75,6 @@ int main(){
         }catch(requirementNotFulfilledException& e){
             if(production_list.empty())return 1;
             built = false;
-        }
-        std::vector <ProductionEntry*> finished_list = process_production_list();
-        if (!finished_list.empty()) {
-            generate_json = true;
-            //TODO generate productionfinishedjson
         }
         if(generate_json){
             //TODO print json
