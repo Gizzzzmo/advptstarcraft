@@ -120,13 +120,13 @@ public:
         return s;
     }
 
-    static ProductionEntry* check_and_build(std::map<int , std::vector<AbstractEntity*>> &entities_done, unsigned int& minerals, unsigned int& gas, unsigned int& supply_used, unsigned int& supply){
+    static ProductionEntry* check_and_build(std::map<int , std::vector<AbstractEntity*>*> &entities_done, unsigned int& minerals, unsigned int& gas, unsigned int& supply_used, unsigned int& supply){
         if(minerals < mins throw noMineralsException();
         if(gas<  gs) throw noGasException();
         if(sppl < supply-supply_used) throw noSupplyException();
         //TODO implement bismask behavior
         //TODO implement requirements
-        std::vector<AbstractEntity> possible_producers = entities_done.find(prd);
+        std::vector<AbstractEntity> possible_producers = *entities_done.find(prd);
         for(AbstractEntity* producer : possible_producers){
             if(producer->check_and_occupy()){
                 //TODO: Kill producer if consume_at_start

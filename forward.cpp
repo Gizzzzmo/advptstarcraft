@@ -6,7 +6,7 @@
 typedef ProductionEntry* (*build_and_check)();
 
 
-std::map<int, std::vector<AbstractEntity*>> entitymap;
+std::map<int, std::vector<AbstractEntity*>*> entitymap;
 std::map<std::string, build_and_check> build_map;
 std::vector<ProductionEntry*> production_list; 
 unsigned int time = 0;
@@ -39,6 +39,7 @@ int main(){
 
     
     build_map["Hatchery"] = makeHatchery;
+    //TODO @Thomas also initialize all the vectors and put them into the entitymap i.e. entitymap[id] = new std::vector<AbstractEntity*>(); for all ids 
 
     bool built = false;
     std::string line;
@@ -64,7 +65,7 @@ int main(){
         }catch(noMineralsException& e){
             built = false;
         }catch(noGasException& e){
-            if(entitymap[gas_id].empty() && production_list.empty())return 1;
+            if(entitymap[gas_id]->empty() && production_list.empty())return 1;
             built = false;
         }catch(noSupplyException& e){
             if(production_list.empty())return 1;
