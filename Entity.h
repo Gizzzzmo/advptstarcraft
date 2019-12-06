@@ -143,10 +143,12 @@ public:
         return s;
     }
 
-    static ProductionEntry* check_and_build(std::map<int , std::vector<AbstractEntity*>*> &entities_done, unsigned int& minerals, unsigned int& gas, unsigned int& supply_used, unsigned int& supply){
+    static ProductionEntry* check_and_build(std::map<int , std::vector<AbstractEntity*>*> &entities_done, unsigned int& minerals, unsigned int& gas, unsigned int& supply_used, unsigned int supply){
         if(minerals < mins)throw noMineralsException();
         if(gas < gs) throw noGasException();
         if(sppl < supply-supply_used) throw noSupplyException();
+        //bitmask of 0 is interpreted as there not being any requirements, since all entities should be buildable somehow
+        if(req_mask == 0)goto req_fulfilled;
         for(int req_id : mask_to_vector<req_mask>()){
             if(!(entities_done[req_id]->empty()))goto req_fulfilled;
         }
@@ -160,6 +162,10 @@ public:
                 AbstractEntity* producer = *it;
                 if(producer->check_and_occupy()){
                     if(prd_d == Destiny::consumed_at_start)possible_producers.erase(it);
+                    
+                    minerals -= mins;
+                    gas -= gs;
+                    supply_used += sppl;
                     AbstractEntity* producee = new Entity<race, clss_id, mins, gs, sppl, sppl_p, prd_mask, prd_d, req_mask, maxOcc, bldtime>();
                     ProductionEntry* e = new ProductionEntry(producee, producer, bldtime);
                     return e;
