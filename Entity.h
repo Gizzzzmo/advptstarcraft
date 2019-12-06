@@ -144,7 +144,7 @@ public:
     }
 
     static ProductionEntry* check_and_build(std::map<int , std::vector<AbstractEntity*>*> &entities_done, unsigned int& minerals, unsigned int& gas, unsigned int& supply_used, unsigned int supply){
-        if(sppl < supply-supply_used) throw noSupplyException();
+        if(sppl > supply-supply_used) throw noSupplyException();
         //bitmask of 0 is interpreted as there not being any requirements, since all entities should be buildable somehow
         if(req_mask == 0)goto req_fulfilled;
         for(int req_id : mask_to_vector<req_mask>()){
