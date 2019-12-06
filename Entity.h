@@ -144,8 +144,6 @@ public:
     }
 
     static ProductionEntry* check_and_build(std::map<int , std::vector<AbstractEntity*>*> &entities_done, unsigned int& minerals, unsigned int& gas, unsigned int& supply_used, unsigned int supply){
-        if(minerals < mins)throw noMineralsException();
-        if(gas < gs) throw noGasException();
         if(sppl < supply-supply_used) throw noSupplyException();
         //bitmask of 0 is interpreted as there not being any requirements, since all entities should be buildable somehow
         if(req_mask == 0)goto req_fulfilled;
@@ -153,8 +151,10 @@ public:
             if(!(entities_done[req_id]->empty()))goto req_fulfilled;
         }
         throw requirementNotFulfilledException();
-
         req_fulfilled:
+        if(gas < gs) throw noGasException();
+        if(minerals < mins)throw noMineralsException();
+
         //possibly search for chronoboosted producers?
         for(int prd_id : mask_to_vector<prd_mask>()){
             std::vector<AbstractEntity*> possible_producers = *(entities_done[prd_id]);
