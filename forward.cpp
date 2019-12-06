@@ -42,7 +42,7 @@ int main(){
     build_map["Hatchery"] = makeEntity<Race::Terran, 0, 30000, 0, 0, 6, 0, Destiny::consumed_at_start, 0, 1, 60>;
     //TODO @Thomas also initialize all the vectors and put them into the entitymap i.e. entitymap[id] = new std::vector<AbstractEntity*>(); for all ids 
 
-    bool built = false;
+    bool built = true;
     std::string line;
     for(;1;++time_tick){
         bool generate_json = false;
