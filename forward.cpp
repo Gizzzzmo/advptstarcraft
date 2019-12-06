@@ -9,7 +9,7 @@ typedef ProductionEntry* (*build_and_check)();
 std::map<int, std::vector<AbstractEntity*>*> entitymap;
 std::map<std::string, build_and_check> build_map;
 std::vector<ProductionEntry*> production_list; 
-unsigned int time = 0;
+unsigned int time_tick = 0;
 unsigned int minerals;
 unsigned int gas;
 unsigned int supply;
@@ -22,8 +22,8 @@ ProductionEntry* makeHatchery(){
 inline std::vector<ProductionEntry*> process_production_list(){
     std::vector<ProductionEntry*> productionlist;
     for(ProductionEntry* entry : production_list) {
-        if(entry->time_done == time) {
-            entitymap[(entry->producee)->id].push_back(entry->producee);
+        if(entry->time_done == time_tick) {
+            entitymap[(entry->producee)->class_id()]->push_back(entry->producee);
             //TODO:: KIll if producer killed at end
             //TODO: Remove from production_list
             //TODO: If producer occupied, make available
@@ -43,7 +43,7 @@ int main(){
 
     bool built = false;
     std::string line;
-    for(;1;++time){
+    for(;1;++time_tick){
         bool generate_json = false;
         if(built){
             std::getline(std::cin, line);
@@ -59,7 +59,7 @@ int main(){
         ProductionEntry* entry;
         try{
             entry = (*f)();
-            entry->time_done += time;
+            entry->addTime(time_tick);
             //TODO genrate produtionbeingjson
             production_list.push_back(entry);
         }catch(noMineralsException& e){
@@ -70,7 +70,7 @@ int main(){
         }catch(noSupplyException& e){
             if(production_list.empty())return 1;
             built = false;
-        }catch(noProdcuerAvailableException& e){
+        }catch(noProducerAvailableException& e){
             if(production_list.empty())return 1;
             built = false;
         }catch(requirementNotFulfilledException& e){
