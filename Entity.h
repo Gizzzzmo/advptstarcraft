@@ -130,7 +130,7 @@ public:
         for(AbstractEntity* producer : possible_producers){
             if(producer->check_and_occupy()){
                 //TODO: Kill producer if consume_at_start
-                AbstractEntity* producee = new Entity<class_id, mins, gs, sppl, sppl_p, prd, prd_d, req, maxOcc, bldtime>;
+                AbstractEntity* producee = new Entity<class_id, mins, gs, sppl, sppl_p, prd, prd_d, req, maxOcc, bldtime>();
                 ProductionEntry* e = new ProductionEntry(producee, producer, bldtime);
                 return e;
             }
