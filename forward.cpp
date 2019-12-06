@@ -15,8 +15,9 @@ unsigned int gas;
 unsigned int supply;
 unsigned int supply_used;
 
-ProductionEntry* makeHatchery(){
-    return Entity<Race::Zerg, 0, 300, 0, 0, 6, 0, Destiny::consumed_at_start, -1, 1, 60>::check_and_build(entitymap, minerals, gas, supply_used, supply);
+template<Race race, int clss_id, int mins, int gs, int sppl, int sppl_p, long prd, Destiny prd_d, int req, int maxOcc, int bldtime>
+ProductionEntry* makeEntity(){
+    return Entity<race, clss_id, mins, gs, sppl, sppl_p, prd, prd_d, req, maxOcc, bldtime>::check_and_build(entitymap, minerals, gas, supply_used, supply);
 }
 
 inline std::vector<ProductionEntry*> process_production_list(){
@@ -37,8 +38,8 @@ inline std::vector<ProductionEntry*> process_production_list(){
 int main(){
     int gas_id = 10;
 
-    
-    build_map["Hatchery"] = makeHatchery;
+    //keep in mind minerals and gas are in hundredths
+    build_map["Hatchery"] = makeEntity<Race::Terran, 0, 30000, 0, 0, 6, 0, Destiny::consumed_at_start, 0, 1, 60>;
     //TODO @Thomas also initialize all the vectors and put them into the entitymap i.e. entitymap[id] = new std::vector<AbstractEntity*>(); for all ids 
 
     bool built = false;
