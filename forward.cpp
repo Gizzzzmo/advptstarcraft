@@ -28,7 +28,7 @@ inline std::vector<ProductionEntry*> process_production_list(){
             //TODO:: KIll if producer killed at end
             //TODO: Remove from production_list
             //TODO: If producer occupied, make available
-            //TODO: Add to production list
+            //TODO: Add to enity list
             //TODO: add supply_p
         }
     }
@@ -36,6 +36,7 @@ inline std::vector<ProductionEntry*> process_production_list(){
 }
 
 int main(){
+    int worker_id = 0;
     int gas_id = 10;
 
     //keep in mind minerals and gas are in hundredths
@@ -64,6 +65,7 @@ int main(){
             //TODO genrate produtionbeingjson
             production_list.push_back(entry);
         }catch(noMineralsException& e){
+            if(entitymap[worker_id]->empty() && production_list.empty())return 1;
             built = false;
         }catch(noGasException& e){
             if(entitymap[gas_id]->empty() && production_list.empty())return 1;
