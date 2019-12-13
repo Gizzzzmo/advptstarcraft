@@ -189,7 +189,6 @@ public:
                 if(producer->check_and_occupy()){
                     if(producer->is_worker())available_workers--;
                     if(prd_d == Destiny::consumed_at_start)possible_producers.erase(it);
-                    
                     minerals -= mins;
                     gas -= gs;
                     supply_used += sppl;
