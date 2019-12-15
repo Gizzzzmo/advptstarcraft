@@ -107,6 +107,7 @@ int main(){
             build_start_event["producerID"] = entry->producer->id();
             events.push_back(build_start_event);
             production_list.push_back(entry);
+            built = true;
         }catch(noMineralsException& e){
             if(entitymap[worker_id]->empty() && production_list.empty())goto list_invalid;
             built = false;
