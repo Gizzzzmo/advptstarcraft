@@ -12,13 +12,13 @@ enum Race {Protoss, Zerg, Terran};
 
 //turns a bitmask into a vector of those indices of the mask, where the bit is one
 //the mask is a template argument and the function is cached 
-template<int bitmask>
+template<unsigned long bitmask>
 inline std::vector<int>& mask_to_vector(){
     static bool already_calculated = false;
     static std::vector<int> v;
     if(!already_calculated){
         already_calculated = true;
-        int mask = bitmask;
+        unsigned long mask = bitmask;
         for(size_t i = 0;i < 64;++i){
             if(mask%2 == 1)v.push_back(i);
             mask = mask>>1;

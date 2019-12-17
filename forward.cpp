@@ -16,7 +16,7 @@ std::list<ProductionEntry*> production_list;
 unsigned int time_tick = 1;
 unsigned int minerals = 50;
 unsigned int gas = 0;
-unsigned int supply;
+unsigned int supply = 15;
 unsigned int supply_used = 12;
 unsigned int workers_available = 12;
 unsigned int mineral_worker = 12;
@@ -29,8 +29,10 @@ ProductionEntry* makeEntity(){
 
 inline std::list<ProductionEntry*> process_production_list(){
     std::list<ProductionEntry*> result;
-    for(std::list<ProductionEntry*>::iterator it = production_list.begin(); it != production_list.end(); ++it) {
+    for(std::list<ProductionEntry*>::iterator it = production_list.begin(); it != production_list.end();) {
         ProductionEntry* entry = *it;
+        auto prev = it;
+        ++it;
         if(entry->time_done == time_tick) {
             //TODO: Add to enity list
             entitymap[(entry->producee)->class_id()]->push_back(entry->producee);
@@ -41,10 +43,10 @@ inline std::list<ProductionEntry*> process_production_list(){
                 case occupied:
                     entry->producee->make_available();
                     break;
-            production_list.erase(it);
+            }
+            production_list.erase(prev);
             supply += entry->producee->supply_provided();
             result.push_back(entry);
-            }
         }
     }
     return result;
@@ -70,7 +72,7 @@ int main(){
     while(std::cin){
         std::string line; 
         std::getline(std::cin, line);
-        lines.push_back(line);
+        if(line != "")lines.push_back(line);
     }
     int next_line = 0;
     std::string line;
@@ -79,7 +81,6 @@ int main(){
 
     for(;1;++time_tick){
         update_resources();
-
         json message;
         message["time"] = time_tick;
 
@@ -111,6 +112,9 @@ int main(){
 
 
         if(!nomorebuilding){
+            if(build_map.find(line) == build_map.end()){
+                goto list_invalid;
+            }
             build_and_check f = build_map[line];
             ProductionEntry* entry;
             try{
