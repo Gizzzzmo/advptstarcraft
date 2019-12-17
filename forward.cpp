@@ -57,16 +57,46 @@ void update_resources(){
     gas += 63*gas_worker;
 }
 
-int main(){
-    int worker_id = 0;
-    int gas_id = 10;
+int main(int argc, char **argv){
+    Race race = argv[1] == "terran" ? Race::Terran : argv[1] == "zerg" ? Race::Zerg : Race::Protoss;
+    int worker_id;
+    int gas_id;
 
     //keep in mind minerals and gas are in hundredths
-#include "unit_map.h"
     for (int i = 0; i<entitymap.size(); i++){
         entitymap[i] = new std::list<AbstractEntity*>();
     }
-    //TODO @Thomas also initialize all the vectors and put them into the entitymap i.e. entitymap[id] = new std::vector<AbstractEntity*>(); for all ids 
+    switch(race){
+        case Terran:
+            #include "unit_map_terran.h"
+            worker_id = 4;
+            gas_id = 25;
+            for(int i = 0;i < 12;i++){
+                entitymap[4]->push_back(new Entity<Race::Terran, 4, 5000, 0, 1, 0, 0, 0, 0, 0x0000000000000007, Destiny::occupied, 0x0000000000000000, 1, 17, 1, 0, 1>);
+            }
+            entitymap[0]->push_back(new Entity<Race::Terran, 0, 40000, 0, 0, 15, 0, 0, 0, 0x0000000000000010, Destiny::occupied, 0x0000000000000000, 1, 100, 0, 0, 1>);
+            break;
+        case Zerg:
+            #include "unit_map_zerg.h"
+            worker_id = 9;
+            gas_id = 20;
+            for(int i = 0;i < 12;i++){
+                entitymap[4]->push_back(new Entity<Race::Zerg, 9, 5000, 0, 1, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000000, 1, 17, 1, 0, 1>);
+            }
+            entitymap[0]->push_back(new Entity<Race::Zerg, 0, 30000, 0, 0, 6, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000000000, 1, 100, 0, 1, 1>);
+            entitymap[16]->push_back(new Entity<Race::Zerg, 16, 10000, 0, 0, 8, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000000, 1, 25, 0, 0, 1>);
+            supply = 14;
+            break;
+        case Protoss:
+            #include "unit_map_protoss.h"
+            worker_id = 5;
+            gas_id = 7;
+            for(int i = 0;i < 12;i++){
+                entitymap[4]->push_back(new Entity<Race::Protoss, 5, 5000, 0, 1, 0, 0, 0, 0, 0x0000000000000001, Destiny::occupied, 0x0000000000000000, 1, 17, 1, 0, 1>);
+            }
+            entitymap[0]->push_back(new Entity<Race::Protoss, 0, 40000, 0, 0, 15, 200, 50, 50, 0x0000000000000020, Destiny::freed, 0x0000000000000000, 1, 100, 0, 0, 1>);
+            break;
+    }
 
     bool built = true;
     bool nomorebuilding = false;
@@ -83,6 +113,7 @@ int main(){
     json output;
 
     for(;1;++time_tick){
+        if(time_tick > 1000)goto list_invalid;
         update_resources();
         json message;
         message["time"] = time_tick;
