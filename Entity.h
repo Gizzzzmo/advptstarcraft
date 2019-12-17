@@ -110,7 +110,7 @@ class requirementNotFulfilledException : public std::exception {
    }
 };
 
-template<Race race, int clss_id, int mins, int gs, int sppl, int sppl_p, int max_nrg, int start_nrg, int ablty_cost, long prd_mask, Destiny prd_d, long req_mask, int max_occ, int bldtime, bool is_wrkr, bool prd_larva, int units_produced>
+template<Race race, int clss_id, int mins, int gs, int sppl, int sppl_p, int max_nrg, int start_nrg, int ablty_cost, ulong prd_mask, Destiny prd_d, ulong req_mask, int max_occ, int bldtime, bool is_wrkr, bool prd_larva, int units_produced>
 class Entity : public AbstractEntity{
 private:
     static auto getCounter() -> unsigned int& {
@@ -171,7 +171,7 @@ public:
         return false;
     }
 
-    static ProductionEntry* check_and_build(std::map<int , std::list<AbstractEntity*>*> &entities_done, unsigned int& minerals, unsigned int& gas, unsigned int& supply_used, unsigned int supply, unsigned int& available_workers){
+    static ProductionEntry* check_and_build(std::array<std::list<AbstractEntity*>*, 64> &entities_done, unsigned int& minerals, unsigned int& gas, unsigned int& supply_used, unsigned int supply, unsigned int& available_workers){
         if(sppl > supply-supply_used) throw noSupplyException();
         //bitmask of 0 is interpreted as there not being any requirements, since all entities should be buildable somehow
         if(req_mask == 0)goto req_fulfilled;
