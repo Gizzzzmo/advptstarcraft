@@ -14,7 +14,7 @@ std::map<std::string, build_and_check> build_map;
 std::map<int, std::string> name_map;
 std::list<ProductionEntry*> production_list; 
 unsigned int time_tick = 1;
-unsigned int minerals = 50;
+unsigned int minerals = 5000;
 unsigned int gas = 0;
 unsigned int supply = 15;
 unsigned int supply_used = 12;
@@ -41,7 +41,7 @@ inline std::list<ProductionEntry*> process_production_list(){
                     entitymap[(entry->producee)->class_id()]->erase(entry->it); //TODO: Delete at correct place
                     break;
                 case occupied:
-                    entry->producee->make_available();
+                    entry->producer->make_available();
                     break;
             }
             production_list.erase(prev);
@@ -81,7 +81,7 @@ int main(int argc, char **argv){
             worker_id = 9;
             gas_id = 20;
             for(int i = 0;i < 12;i++){
-                entitymap[4]->push_back(new Entity<Race::Zerg, 9, 5000, 0, 1, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000000, 1, 17, 1, 0, 1>);
+                entitymap[9]->push_back(new Entity<Race::Zerg, 9, 5000, 0, 1, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000000, 1, 17, 1, 0, 1>);
             }
             entitymap[0]->push_back(new Entity<Race::Zerg, 0, 30000, 0, 0, 6, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000000000, 1, 100, 0, 1, 1>);
             entitymap[16]->push_back(new Entity<Race::Zerg, 16, 10000, 0, 0, 8, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000000, 1, 25, 0, 0, 1>);
@@ -92,7 +92,7 @@ int main(int argc, char **argv){
             worker_id = 5;
             gas_id = 7;
             for(int i = 0;i < 12;i++){
-                entitymap[4]->push_back(new Entity<Race::Protoss, 5, 5000, 0, 1, 0, 0, 0, 0, 0x0000000000000001, Destiny::occupied, 0x0000000000000000, 1, 17, 1, 0, 1>);
+                entitymap[5]->push_back(new Entity<Race::Protoss, 5, 5000, 0, 1, 0, 0, 0, 0, 0x0000000000000001, Destiny::occupied, 0x0000000000000000, 1, 17, 1, 0, 1>);
             }
             entitymap[0]->push_back(new Entity<Race::Protoss, 0, 40000, 0, 0, 15, 200, 50, 50, 0x0000000000000020, Destiny::freed, 0x0000000000000000, 1, 100, 0, 0, 1>);
             break;
@@ -162,18 +162,23 @@ int main(int argc, char **argv){
                 production_list.push_back(entry);
                 built = true;
             }catch(noMineralsException& e){
+                std::cout << "nomins\n";
                 if(entitymap[worker_id]->empty() && production_list.empty())goto list_invalid;
                 built = false;
             }catch(noGasException& e){
+                std::cout << "nogas\n";
                 if(entitymap[gas_id]->empty() && production_list.empty())goto list_invalid;
                 built = false;
             }catch(noSupplyException& e){
+                std::cout << "nosupply\n";
                 if(production_list.empty())goto list_invalid;
                 built = false;
             }catch(noProducerAvailableException& e){
+                std::cout << "noprod\n";
                 if(production_list.empty())goto list_invalid;
                 built = false;
             }catch(requirementNotFulfilledException& e){
+                std::cout << "noreq\n";
                 if(production_list.empty())goto list_invalid;
                 built = false;
             }
@@ -184,8 +189,8 @@ int main(int argc, char **argv){
         message["status"]["workers"]["minerals"] = mineral_worker;
         message["status"]["workers"]["vespene"] = gas_worker;
         message["status"]["resources"] = {};
-        message["status"]["resources"]["minerals"] = minerals;
-        message["status"]["resources"]["vespene"] = gas;
+        message["status"]["resources"]["minerals"] = minerals/100;
+        message["status"]["resources"]["vespene"] = gas/100;
         message["status"]["resources"]["supply-used"] = supply_used;
         message["status"]["resources"]["supply"] = supply;
         message["events"] = events;
@@ -193,7 +198,7 @@ int main(int argc, char **argv){
         
     }
     output["buildlistValid"] = 1;
-    output["game"] = "Race";//TODO determine race
+    output["game"] = race == Race::Terran ? "Terr" : race == Race::Zerg ? "Zerg" : "Prot";
     output["messages"] = messages;
     std::cout << output << std::endl;
     return 0;

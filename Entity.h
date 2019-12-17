@@ -6,6 +6,7 @@
 #include <sstream>
 #include <exception>
 #include <list>
+#include <iostream>
 
 enum Destiny {consumed_at_start, consumed_at_end, occupied, freed};
 enum Race {Protoss, Zerg, Terran};
