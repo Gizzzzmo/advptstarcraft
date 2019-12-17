@@ -2,7 +2,7 @@
 
 from sys import argv
 
-line_string = 'build_map["{name}"] = makeEntity<{race}, {class_id}, {mins}, {gas}, {supply}, {provided_supply}, {max_energy}, {start_energy}, {ablty_cost}, 0x{producer_id:0>16X}, {destiny}, 0x{requirements:0>16X}, {maximum_occupation}, {build_time}, {is_worker}, {produces_larva}, {units_produced}>;'
+line_string = 'build_map["{name}"] = makeEntity<{race}, {class_id}, {mins}, {gas}, {supply_delta}, {provided_supply_delta}, {max_energy}, {start_energy}, {ablty_cost}, 0x{producer_id:0>16X}, {destiny}, 0x{requirements:0>16X}, {maximum_occupation}, {build_time}, {is_worker}, {produces_larva}, {units_produced}>;\n'
 
 def make_bitmap(dict_of_entities, entity_names):
     if entity_names == ['']:
@@ -82,10 +82,26 @@ for entities in (zergs, prot, terr):
                 "Terr": "Race::Terran"
                 }[e["race"]]
         e["requirements"] = make_bitmap(entities, e["dependencies"].split("/"))
+        if e["producer"] != "" and e["destiny"] in ("Destiny::consumed_at_start", "Destiny::consumed_at_end"):
+            e["provided_supply_delta"] = e["provided_supply"] - entities[e["producer"].split("/")[0]]["provided_supply"]
+        else:
+            e["provided_supply_delta"] = e["provided_supply"]
+        if e["producer"] == "" and e["destiny"] in ("Destiny::consumed_at_start", "Destiny::consumed_at_end"):
+            e["supply_delta"] = e["supply"] - entities[e["producer"].split("/")[0]]["supply"]
+        else:
+            e["supply_delta"] = e["supply"]
         e["producer_id"] = make_bitmap(entities, e["producer"].split("/"))
 
 
-for entities in (zergs, prot, terr):
-    for k,e in entities.items():
-        print(line_string.format(**e))
+unit_map_zerg = open("unit_map_zerg.h", "w")
+for k,e in zergs.items():
+    unit_map_zerg.write(line_string.format(**e))
+
+unit_map_protoss = open("unit_map_protoss.h", "w")
+for k,e in prot.items():
+    unit_map_protoss.write(line_string.format(**e))
+
+unit_map_terran = open("unit_map_terran.h", "w")
+for k,e in terr.items():
+    unit_map_terran.write(line_string.format(**e))
 
