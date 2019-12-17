@@ -50,6 +50,11 @@ inline std::list<ProductionEntry*> process_production_list(){
     return result;
 }
 
+void update_resources(){
+    minerals += 70*mineral_worker;
+    gas += 63*gas_worker;
+}
+
 int main(){
     int worker_id = 0;
     int gas_id = 10;
@@ -59,6 +64,7 @@ int main(){
     //TODO @Thomas also initialize all the vectors and put them into the entitymap i.e. entitymap[id] = new std::vector<AbstractEntity*>(); for all ids 
 
     bool built = true;
+    bool nomorebuilding = false;
     std::vector<json> messages;
     std::vector<std::string> lines;
     while(std::cin){
@@ -72,14 +78,18 @@ int main(){
     json output;
 
     for(;1;++time_tick){
+        update_resources();
+
         json message;
         message["time"] = time_tick;
 
         std::vector<json> events;
         bool generate_json = false;
         if(built){
-            if(next_line == lines.size())break;
-            line = lines[next_line++];
+            if(next_line != lines.size())
+                line = lines[next_line++];
+            else if(production_list.empty())break;
+            else nomorebuilding = true;
         }
         std::list <ProductionEntry*> finished_list = process_production_list();
         if (!finished_list.empty()) {
@@ -91,38 +101,44 @@ int main(){
                 event["producerID"] = entry->producer->id();
                 event["producedIDs"] = {entry->producee->id()};
                 events.push_back(event);
+                if(entry->producee->producer_destiny() == Destiny::consumed_at_end || 
+                    entry->producee->producer_destiny() == Destiny::consumed_at_start){
+                    delete entry->producer;
+                }
+                delete entry;
             }
         }
 
 
-        
-        build_and_check f = build_map[line];
-        ProductionEntry* entry;
-        try{
-            entry = (*f)();
-            entry->addTime(time_tick);
-            json build_start_event;
-            build_start_event["type"] = "build-start";
-            build_start_event["name"] = name_map[entry->producee->class_id()];
-            build_start_event["producerID"] = entry->producer->id();
-            events.push_back(build_start_event);
-            production_list.push_back(entry);
-            built = true;
-        }catch(noMineralsException& e){
-            if(entitymap[worker_id]->empty() && production_list.empty())goto list_invalid;
-            built = false;
-        }catch(noGasException& e){
-            if(entitymap[gas_id]->empty() && production_list.empty())goto list_invalid;
-            built = false;
-        }catch(noSupplyException& e){
-            if(production_list.empty())goto list_invalid;
-            built = false;
-        }catch(noProducerAvailableException& e){
-            if(production_list.empty())goto list_invalid;
-            built = false;
-        }catch(requirementNotFulfilledException& e){
-            if(production_list.empty())goto list_invalid;
-            built = false;
+        if(!nomorebuilding){
+            build_and_check f = build_map[line];
+            ProductionEntry* entry;
+            try{
+                entry = (*f)();
+                entry->addTime(time_tick);
+                json build_start_event;
+                build_start_event["type"] = "build-start";
+                build_start_event["name"] = name_map[entry->producee->class_id()];
+                build_start_event["producerID"] = entry->producer->id();
+                events.push_back(build_start_event);
+                production_list.push_back(entry);
+                built = true;
+            }catch(noMineralsException& e){
+                if(entitymap[worker_id]->empty() && production_list.empty())goto list_invalid;
+                built = false;
+            }catch(noGasException& e){
+                if(entitymap[gas_id]->empty() && production_list.empty())goto list_invalid;
+                built = false;
+            }catch(noSupplyException& e){
+                if(production_list.empty())goto list_invalid;
+                built = false;
+            }catch(noProducerAvailableException& e){
+                if(production_list.empty())goto list_invalid;
+                built = false;
+            }catch(requirementNotFulfilledException& e){
+                if(production_list.empty())goto list_invalid;
+                built = false;
+            }
         }
         //TODO recalculate worker distribution
         message["status"] = {};
