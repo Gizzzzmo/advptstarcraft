@@ -5,6 +5,7 @@
 #include <string>
 #include <sstream>
 #include <exception>
+#include <list>
 
 enum Destiny {consumed_at_start, consumed_at_end, occupied, freed};
 enum Race {Protoss, Zerg, Terran};
@@ -42,11 +43,11 @@ public:
     virtual int requirement() const = 0;
     virtual std::string id() const = 0;
     virtual bool is_worker() const = 0;
-    virtual int max_energy() const = 0;
+    virtual unsigned int max_energy() const = 0;
 
     inline void updateEnergy(){
         energy += 56525;
-        int max_nrg = max_energy();
+        unsigned int max_nrg = max_energy();
         if(energy > max_nrg)energy = max_nrg;
     }
 
@@ -71,11 +72,12 @@ public:
     AbstractEntity* producee;
     AbstractEntity* producer;
     unsigned int time_done;
-    ProductionEntry(AbstractEntity* producee, AbstractEntity* producer, unsigned int time_done) : 
-    producee(producee), producer(producer), time_done(time_done){}
+    ProductionEntry(AbstractEntity* producee, AbstractEntity* producer, unsigned int time_done, std::list<AbstractEntity *>::iterator itt) :
+    producee(producee), producer(producer), time_done(time_done), it(itt){}
     void addTime(unsigned int time){
         time_done += time;
     }
+    std::list<AbstractEntity *>::iterator it;
 };
 
 class noMineralsException : public std::exception {
@@ -144,7 +146,7 @@ public:
     bool is_worker() const override{
         return is_wrkr;
     }
-    int max_energy() const override{
+    unsigned int max_energy() const override{
         return max_nrg;
     }
     Destiny producer_destiny() const override{
@@ -169,7 +171,7 @@ public:
         return false;
     }
 
-    static ProductionEntry* check_and_build(std::map<int , std::vector<AbstractEntity*>*> &entities_done, unsigned int& minerals, unsigned int& gas, unsigned int& supply_used, unsigned int supply, unsigned int& available_workers){
+    static ProductionEntry* check_and_build(std::map<int , std::list<AbstractEntity*>*> &entities_done, unsigned int& minerals, unsigned int& gas, unsigned int& supply_used, unsigned int supply, unsigned int& available_workers){
         if(sppl > supply-supply_used) throw noSupplyException();
         //bitmask of 0 is interpreted as there not being any requirements, since all entities should be buildable somehow
         if(req_mask == 0)goto req_fulfilled;
@@ -183,8 +185,8 @@ public:
 
         //possibly search for chronoboosted producers?
         for(int prd_id : mask_to_vector<prd_mask>()){
-            std::vector<AbstractEntity*> possible_producers = *(entities_done[prd_id]);
-            for(std::vector<AbstractEntity*>::iterator it = possible_producers.begin();it != possible_producers.end();++it){
+            std::list<AbstractEntity*> possible_producers = *(entities_done[prd_id]);
+            for(std::list<AbstractEntity*>::iterator it = possible_producers.begin();it != possible_producers.end();++it){
                 AbstractEntity* producer = *it;
                 if(producer->check_and_occupy()){
                     if(producer->is_worker())available_workers--;
@@ -193,7 +195,7 @@ public:
                     gas -= gs;
                     supply_used += sppl;
                     AbstractEntity* producee = new Entity<race, clss_id, mins, gs, sppl, sppl_p, max_nrg, start_nrg, ablty_cost, prd_mask, prd_d, req_mask, max_occ, bldtime, is_wrkr, prd_larva>();
-                    ProductionEntry* e = new ProductionEntry(producee, producer, bldtime);
+                    ProductionEntry* e = new ProductionEntry(producee, producer, bldtime, it);
                     return e;
                 }
             }

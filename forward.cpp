@@ -3,15 +3,16 @@
 using json = nlohmann::json;
 #include <map>
 #include <vector>
+#include <list>
 #include <iostream>
 
 typedef ProductionEntry* (*build_and_check)();
 
 
-std::map<int, std::vector<AbstractEntity*>*> entitymap;
+std::map<int, std::list<AbstractEntity*>*> entitymap;
 std::map<std::string, build_and_check> build_map;
 std::map<int, std::string> name_map;
-std::vector<ProductionEntry*> production_list; 
+std::list<ProductionEntry*> production_list; 
 unsigned int time_tick = 1;
 unsigned int minerals = 50;
 unsigned int gas = 0;
@@ -26,19 +27,27 @@ ProductionEntry* makeEntity(){
     return Entity<race, clss_id, mins, gs, sppl, sppl_p, max_nrg, start_nrg, ablty_cost, prd_mask, prd_d, req_mask, max_occ, bldtime, is_wrkr, prd_larva>::check_and_build(entitymap, minerals, gas, supply_used, supply, workers_available);
 }
 
-inline std::vector<ProductionEntry*> process_production_list(){
-    std::vector<ProductionEntry*> productionlist;
-    for(ProductionEntry* entry : production_list) {
+inline std::list<ProductionEntry*> process_production_list(){
+    std::list<ProductionEntry*> result;
+    for(std::list<ProductionEntry*>::iterator it = production_list.begin(); it != production_list.end(); ++it) {
+        ProductionEntry* entry = *it;
         if(entry->time_done == time_tick) {
-            entitymap[(entry->producee)->class_id()]->push_back(entry->producee);
-            //TODO:: KIll if producer killed at end and remove supply_provided as well as supply
-            //TODO: Remove from production_list
-            //TODO: If producer occupied, make available
             //TODO: Add to enity list
-            //TODO: add supply_p
+            entitymap[(entry->producee)->class_id()]->push_back(entry->producee);
+            switch(entry->producee->producer_destiny()) {
+                case consumed_at_end:
+                    entitymap[(entry->producee)->class_id()]->erase(entry->it); //TODO: Delete at correct place
+                    break;
+                case occupied:
+                    entry->producee->make_available();
+                    break;
+            production_list.erase(it);
+            supply += entry->producee->supply_provided();
+            result.push_back(entry);
+            }
         }
     }
-    return production_list;
+    return result;
 }
 
 int main(){
@@ -72,7 +81,7 @@ int main(){
             if(next_line == lines.size())break;
             line = lines[next_line++];
         }
-        std::vector <ProductionEntry*> finished_list = process_production_list();
+        std::list <ProductionEntry*> finished_list = process_production_list();
         if (!finished_list.empty()) {
             generate_json = true;
             for(ProductionEntry* entry : finished_list){
