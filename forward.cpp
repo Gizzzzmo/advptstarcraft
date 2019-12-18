@@ -62,7 +62,7 @@ void update_resources(){
     gas += 63*gas_worker;
 }
 
-void error_exit(char* message, json output) {
+void error_exit(std::string message, json output) {
     output["buildlistValid"] = 0;
     std::cout << message << "\n";
     std::cout << output << std::endl;
@@ -159,7 +159,7 @@ int main(int argc, char **argv){
 
 
         if(!nomorebuilding){
-            if(build_map.find(line) == build_map.end()) error_exit("Build map is empty", output);
+            if(build_map.find(line) == build_map.end()) error_exit(line + " Entity not found", output);
             build_and_check f = build_map[line];
             ProductionEntry* entry;
             try{
