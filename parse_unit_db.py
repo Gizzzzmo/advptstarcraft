@@ -2,7 +2,10 @@
 
 from sys import argv
 
-line_string = 'build_map["{name}"] = makeEntity<{race}, {class_id}, {mins}, {gas}, {supply_delta}, {provided_supply_delta}, {max_energy}, {start_energy}, {ablty_cost}, 0x{producer_id:0>16X}, {destiny}, 0x{requirements:0>16X}, {maximum_occupation}, {build_time}, {is_worker}, {produces_larva}, {units_produced}>;\n'
+line_string = """
+build_map["{name}"] = makeEntity<{race}, {class_id}, {mins}, {gas}, {supply_delta}, {provided_supply_delta}, {max_energy}, {start_energy}, {ablty_cost}, 0x{producer_id:0>16X}, {destiny}, 0x{requirements:0>16X}, {maximum_occupation}, {build_time}, {is_worker}, {produces_larva}, {units_produced}>;
+name_map[{class_id}] = "{name}";
+"""
 
 def make_bitmap(dict_of_entities, entity_names):
     if entity_names == ['']:
