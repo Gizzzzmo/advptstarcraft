@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 
 enum Destiny {consumed_at_start, consumed_at_end, occupied, freed};
 class AbstractEntity{
