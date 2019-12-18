@@ -95,7 +95,7 @@ public:
     }
 
     static ProductionEntry* check_and_build(struct GameState& currentState){
-        if(sppl > currentState.supply-currentState.supply_used) throw noSupplyException();
+        if(sppl > static_cast<int>(currentState.supply-currentState.supply_used)) throw noSupplyException();
         //bitmask of 0 is interpreted as there not being any requirements, since all entities should be buildable somehow
         if(req_mask == 0)goto req_fulfilled;
         for(int req_id : mask_to_vector<req_mask>()){
