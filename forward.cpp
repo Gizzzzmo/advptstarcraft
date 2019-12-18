@@ -4,6 +4,7 @@ using json = nlohmann::json;
 #include <vector>
 #include <list>
 #include <iostream>
+#include <algorithm>
 
 #include "Entity.h"
 #include "AbstractEntity.h"
@@ -163,6 +164,7 @@ int main(int argc, char **argv){
             ProductionEntry* entry;
             try{
                 entry = (*f)();
+                generate_json = true;
                 entry->addTime(time_tick);
                 json build_start_event;
                 build_start_event["type"] = "build-start";
@@ -188,19 +190,28 @@ int main(int argc, char **argv){
                 built = false;
             }
         }
+        unsigned int max_gas_worker = std::min(entitymap[0]->size()*6, entitymap[gas_id]->size()*3);
+        unsigned int new_gas_worker = std::min(max_gas_worker, workers_available/2);
+        unsigned int new_mineral_worker = workers_available - gas_worker;
+        if(new_gas_worker != gas_worker || new_mineral_worker != mineral_worker){
+            generate_json = true;
+            gas_worker = new_gas_worker;
+            mineral_worker = new_mineral_worker;
+        }
         //TODO recalculate worker distribution
-        message["status"] = {};
-        message["status"]["workers"] = {};
-        message["status"]["workers"]["minerals"] = mineral_worker;
-        message["status"]["workers"]["vespene"] = gas_worker;
-        message["status"]["resources"] = {};
-        message["status"]["resources"]["minerals"] = minerals/100;
-        message["status"]["resources"]["vespene"] = gas/100;
-        message["status"]["resources"]["supply-used"] = supply_used;
-        message["status"]["resources"]["supply"] = supply;
-        message["events"] = events;
-        messages.push_back(message);
-        
+        if(generate_json){
+            message["status"] = {};
+            message["status"]["workers"] = {};
+            message["status"]["workers"]["minerals"] = mineral_worker;
+            message["status"]["workers"]["vespene"] = gas_worker;
+            message["status"]["resources"] = {};
+            message["status"]["resources"]["minerals"] = minerals/100;
+            message["status"]["resources"]["vespene"] = gas/100;
+            message["status"]["resources"]["supply-used"] = supply_used;
+            message["status"]["resources"]["supply"] = supply;
+            message["events"] = events;
+            messages.push_back(message);
+        }
     }
     output["buildlistValid"] = 1;
     output["game"] = race == Race::Terran ? "Terr" : race == Race::Zerg ? "Zerg" : "Prot";
