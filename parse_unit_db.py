@@ -89,7 +89,7 @@ for entities in (zergs, prot, terr):
             e["provided_supply_delta"] = e["provided_supply"] - entities[e["producer"].split("/")[0]]["provided_supply"]
         else:
             e["provided_supply_delta"] = e["provided_supply"]
-        if e["producer"] == "" and e["destiny"] in ("Destiny::consumed_at_start", "Destiny::consumed_at_end"):
+        if e["producer"] != "" and e["destiny"] in ("Destiny::consumed_at_start", "Destiny::consumed_at_end"):
             e["supply_delta"] = e["supply"] - entities[e["producer"].split("/")[0]]["supply"]
         else:
             e["supply_delta"] = e["supply"]
