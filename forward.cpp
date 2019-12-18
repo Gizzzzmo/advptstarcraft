@@ -1,10 +1,13 @@
-#include "Entity.h"
 #include "json.hpp"
 using json = nlohmann::json;
 #include <map>
 #include <vector>
 #include <list>
 #include <iostream>
+
+#include "Entity.h"
+#include "AbstractEntity.h"
+#include "StarcraftExceptions.h"
 
 typedef ProductionEntry* (*build_and_check)();
 
@@ -58,8 +61,19 @@ void update_resources(){
     gas += 63*gas_worker;
 }
 
+void error_exit(char* message, json output) {
+    output["buildlistValid"] = 0;
+    std::cout << message << "\n";
+    std::cout << output << std::endl;
+    exit(1);
+}
+
 int main(int argc, char **argv){
-    Race race = argv[1] == "terran" ? Race::Terran : argv[1] == "zerg" ? Race::Zerg : Race::Protoss;
+    Race race;
+    if (argv[1] == "terran" || argv[1] == "Terran") race = Race::Terran;
+    else if (argv[1] == "zerg") race = Race::Zerg;
+    else race = Race::Protoss;
+    
     int worker_id;
     int gas_id;
 
@@ -114,7 +128,7 @@ int main(int argc, char **argv){
     json output;
 
     for(;1;++time_tick){
-        if(time_tick > 1000)goto list_invalid;
+        if(time_tick > 1000) error_exit("Exceeded max time", output);
         update_resources();
         json message;
         message["time"] = time_tick;
@@ -147,9 +161,7 @@ int main(int argc, char **argv){
 
 
         if(!nomorebuilding){
-            if(build_map.find(line) == build_map.end()){
-                goto list_invalid;
-            }
+            if(build_map.find(line) == build_map.end()) error_exit("Build map is empty", output);
             build_and_check f = build_map[line];
             ProductionEntry* entry;
             try{
@@ -163,24 +175,19 @@ int main(int argc, char **argv){
                 production_list.push_back(entry);
                 built = true;
             }catch(noMineralsException& e){
-                std::cout << "nomins\n";
-                if(entitymap[worker_id]->empty() && production_list.empty())goto list_invalid;
+                if(entitymap[worker_id]->empty() && production_list.empty()) error_exit("No Minerals", output);
                 built = false;
             }catch(noGasException& e){
-                std::cout << "nogas\n";
-                if(entitymap[gas_id]->empty() && production_list.empty())goto list_invalid;
+                if(entitymap[gas_id]->empty() && production_list.empty()) error_exit("No Gas", output);
                 built = false;
             }catch(noSupplyException& e){
-                std::cout << "nosupply\n";
-                if(production_list.empty())goto list_invalid;
+                if(production_list.empty()) error_exit("No supply", output);
                 built = false;
             }catch(noProducerAvailableException& e){
-                std::cout << "noprod\n";
-                if(production_list.empty())goto list_invalid;
+                if(production_list.empty()) error_exit("No Producer Available", output);
                 built = false;
             }catch(requirementNotFulfilledException& e){
-                std::cout << "noreq\n";
-                if(production_list.empty())goto list_invalid;
+                if(production_list.empty()) error_exit("Requirement Not Fullfilled", output);
                 built = false;
             }
         }
@@ -203,7 +210,4 @@ int main(int argc, char **argv){
     output["messages"] = messages;
     std::cout << output << std::endl;
     return 0;
-    list_invalid:
-    output["buildlistValid"] = 0;
-    std::cout << output << std::endl;
 }

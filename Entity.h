@@ -4,17 +4,19 @@
 #include <map>
 #include <string>
 #include <sstream>
-#include <exception>
 #include <list>
 #include <iostream>
 
-enum Destiny {consumed_at_start, consumed_at_end, occupied, freed};
+#include "AbstractEntity.h"
+#include "StarcraftExceptions.h"
+#include "ProductionEntry.h"
+
 enum Race {Protoss, Zerg, Terran};
 
 //turns a bitmask into a vector of those indices of the mask, where the bit is one
 //the mask is a template argument and the function is cached 
 template<unsigned long bitmask>
-inline std::vector<int>& mask_to_vector(){
+inline std::vector<int>& mask_to_vector() {
     static bool already_calculated = false;
     static std::vector<int> v;
     if(!already_calculated){
@@ -28,88 +30,6 @@ inline std::vector<int>& mask_to_vector(){
     return v;
 }
 
-class AbstractEntity{
-protected:
-    unsigned int occupied;
-    unsigned int obj_id;
-    unsigned int energy;
-public:
-    virtual int class_id() const = 0;
-    virtual int minerals() const = 0;
-    virtual int gas() const = 0;
-    virtual int supply() const = 0;
-    virtual int supply_provided() const = 0;
-    virtual unsigned long producer() const = 0;
-    virtual Destiny producer_destiny() const = 0;
-    virtual unsigned long requirement() const = 0;
-    virtual std::string id() const = 0;
-    virtual bool is_worker() const = 0;
-    virtual unsigned int max_energy() const = 0;
-
-    inline void updateEnergy(){
-        energy += 56525;
-        unsigned int max_nrg = max_energy();
-        if(energy > max_nrg)energy = max_nrg;
-    }
-
-    bool check_and_occupy(){
-        if(occupied){
-            --occupied;
-            return true;
-        }
-        else return false;
-    }
-
-    virtual bool cast_if_possible() = 0;
-    
-    void make_available(){
-        occupied++;
-    }
-};
-
-
-class ProductionEntry{
-public:
-    AbstractEntity* producee;
-    AbstractEntity* producer;
-    unsigned int time_done;
-    ProductionEntry(AbstractEntity* producee, AbstractEntity* producer, unsigned int time_done, std::list<AbstractEntity *>::iterator itt) :
-    producee(producee), producer(producer), time_done(time_done), it(itt){}
-    void addTime(unsigned int time){
-        time_done += time;
-    }
-    std::list<AbstractEntity *>::iterator it;
-};
-
-class noMineralsException : public std::exception {
-    const char * what () const throw () {
-      return "noMins";
-   }
-};
-
-class noGasException : public std::exception {
-    const char * what () const throw () {
-      return "noGas";
-   }
-};
-
-class noSupplyException : public std::exception {
-    const char * what () const throw () {
-      return "noSupply";
-   }
-};
-
-class noProducerAvailableException : public std::exception {
-    const char * what () const throw () {
-      return "noProducer";
-   }
-};
-
-class requirementNotFulfilledException : public std::exception {
-    const char * what () const throw () {
-      return "noProducer";
-   }
-};
 
 template<Race race, int clss_id, int mins, int gs, int sppl, int sppl_p, int max_nrg, int start_nrg, int ablty_cost, ulong prd_mask, Destiny prd_d, ulong req_mask, int max_occ, int bldtime, bool is_wrkr, bool prd_larva, int units_produced>
 class Entity : public AbstractEntity{
@@ -120,10 +40,11 @@ private:
     }
 
 public:
-    Entity(){
+    Entity()
+        {
         occupied = max_occ;
-        obj_id = getCounter()++;
         energy = start_nrg;
+        obj_id = getCounter()++;
     }
 
     int class_id() const override{
