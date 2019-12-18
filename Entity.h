@@ -112,6 +112,7 @@ public:
                 AbstractEntity* producer = *it;
                 if(producer->check_and_occupy()){
                     if(producer->is_worker())available_workers--;
+                    if(prd_d == Destiny::freed)producer->make_available(available_workers);
                     if(prd_d == Destiny::consumed_at_start)possible_producers.erase(it);
                     minerals -= mins;
                     gas -= gs;

@@ -35,7 +35,9 @@ public:
 
     virtual bool cast_if_possible() = 0;
     
-    void make_available(){
+    // use only for occupied producers
+    void make_available(unsigned int& available_worker){
+        if(is_worker())available_worker++;
         occupied++;
     }
 };

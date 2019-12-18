@@ -16,7 +16,7 @@ std::array<std::list<AbstractEntity*>*, 64> entitymap;
 std::map<std::string, build_and_check> build_map;
 
 std::map<int, std::string> name_map;
-std::list<ProductionEntry*> production_list; 
+std::list<ProductionEntry*> production_list;
 unsigned int time_tick = 1;
 unsigned int minerals = 5000;
 unsigned int gas = 0;
@@ -45,7 +45,7 @@ inline std::list<ProductionEntry*> process_production_list(){
                     entitymap[(entry->producee)->class_id()]->erase(entry->it); //TODO: Delete at correct place
                     break;
                 case occupied:
-                    entry->producer->make_available();
+                    entry->producer->make_available(workers_available);
                     break;
             }
             production_list.erase(prev);
@@ -69,11 +69,8 @@ void error_exit(char* message, json output) {
 }
 
 int main(int argc, char **argv){
-    Race race;
-    if (argv[1] == "terran" || argv[1] == "Terran") race = Race::Terran;
-    else if (argv[1] == "zerg") race = Race::Zerg;
-    else race = Race::Protoss;
-    
+    std::string racearg(argv[1]);
+    Race race = !racearg.compare("terran") ? Race::Terran : !racearg.compare("zerg") ? Race::Zerg : Race::Protoss;
     int worker_id;
     int gas_id;
 
