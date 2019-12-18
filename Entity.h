@@ -12,13 +12,13 @@ enum Race {Protoss, Zerg, Terran};
 
 //turns a bitmask into a vector of those indices of the mask, where the bit is one
 //the mask is a template argument and the function is cached 
-template<int bitmask>
+template<unsigned long bitmask>
 inline std::vector<int>& mask_to_vector(){
     static bool already_calculated = false;
     static std::vector<int> v;
     if(!already_calculated){
         already_calculated = true;
-        int mask = bitmask;
+        unsigned long mask = bitmask;
         for(size_t i = 0;i < 64;++i){
             if(mask%2 == 1)v.push_back(i);
             mask = mask>>1;
@@ -38,9 +38,9 @@ public:
     virtual int gas() const = 0;
     virtual int supply() const = 0;
     virtual int supply_provided() const = 0;
-    virtual int producer() const = 0;
+    virtual unsigned long producer() const = 0;
     virtual Destiny producer_destiny() const = 0;
-    virtual int requirement() const = 0;
+    virtual unsigned long requirement() const = 0;
     virtual std::string id() const = 0;
     virtual bool is_worker() const = 0;
     virtual unsigned int max_energy() const = 0;
@@ -110,7 +110,7 @@ class requirementNotFulfilledException : public std::exception {
    }
 };
 
-template<Race race, int clss_id, int mins, int gs, int sppl, int sppl_p, int max_nrg, int start_nrg, int ablty_cost, long prd_mask, Destiny prd_d, long req_mask, int max_occ, int bldtime, bool is_wrkr, bool prd_larva>
+template<Race race, int clss_id, int mins, int gs, int sppl, int sppl_p, int max_nrg, int start_nrg, int ablty_cost, ulong prd_mask, Destiny prd_d, ulong req_mask, int max_occ, int bldtime, bool is_wrkr, bool prd_larva, int units_produced>
 class Entity : public AbstractEntity{
 private:
     static auto getCounter() -> unsigned int& {
@@ -140,7 +140,7 @@ public:
     int supply_provided() const override{
         return sppl_p;
     }
-    int producer() const override{
+    unsigned long producer() const override{
         return prd_mask;
     }
     bool is_worker() const override{
@@ -152,7 +152,7 @@ public:
     Destiny producer_destiny() const override{
         return prd_d;
     }
-    int requirement() const override{
+    unsigned long requirement() const override{
         return req_mask;
     }
     std::string id() const override{
@@ -171,7 +171,7 @@ public:
         return false;
     }
 
-    static ProductionEntry* check_and_build(std::map<int , std::list<AbstractEntity*>*> &entities_done, unsigned int& minerals, unsigned int& gas, unsigned int& supply_used, unsigned int supply, unsigned int& available_workers){
+    static ProductionEntry* check_and_build(std::array<std::list<AbstractEntity*>*, 64> &entities_done, unsigned int& minerals, unsigned int& gas, unsigned int& supply_used, unsigned int supply, unsigned int& available_workers){
         if(sppl > supply-supply_used) throw noSupplyException();
         //bitmask of 0 is interpreted as there not being any requirements, since all entities should be buildable somehow
         if(req_mask == 0)goto req_fulfilled;
@@ -194,7 +194,7 @@ public:
                     minerals -= mins;
                     gas -= gs;
                     supply_used += sppl;
-                    AbstractEntity* producee = new Entity<race, clss_id, mins, gs, sppl, sppl_p, max_nrg, start_nrg, ablty_cost, prd_mask, prd_d, req_mask, max_occ, bldtime, is_wrkr, prd_larva>();
+                    AbstractEntity* producee = new Entity<race, clss_id, mins, gs, sppl, sppl_p, max_nrg, start_nrg, ablty_cost, prd_mask, prd_d, req_mask, max_occ, bldtime, is_wrkr, prd_larva, units_produced>();
                     ProductionEntry* e = new ProductionEntry(producee, producer, bldtime, it);
                     return e;
                 }
