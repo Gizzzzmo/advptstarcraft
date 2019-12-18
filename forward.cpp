@@ -115,6 +115,18 @@ int main(int argc, char **argv){
     bool nomorebuilding = false;
     std::vector<json> messages;
     std::vector<std::string> lines;
+    json initial_units;
+
+    for (std::size_t i = 0; i < 64; ++i) {
+        if (entitymap[i]->empty())
+            continue;
+        std::list<std::string> l;
+        for( std::list<AbstractEntity*>::iterator jt = entitymap[i]->begin(); jt != entitymap[i]->end(); ++jt){
+            l.push_back((*jt)->id());
+        }
+        initial_units[name_map[i]] = l;
+    }
+
     while(std::cin){
         std::string line; 
         std::getline(std::cin, line);
@@ -216,6 +228,7 @@ int main(int argc, char **argv){
     output["buildlistValid"] = 1;
     output["game"] = race == Race::Terran ? "Terr" : race == Race::Zerg ? "Zerg" : "Prot";
     output["messages"] = messages;
+    output["initialUnits"] = initial_units;
     std::cout << output << std::endl;
     return 0;
 }
