@@ -10,6 +10,7 @@
 #include "AbstractEntity.h"
 #include "StarcraftExceptions.h"
 #include "ProductionEntry.h"
+#include "Simulator.h"
 
 enum Race {Protoss, Zerg, Terran};
 
@@ -41,7 +42,7 @@ private:
 
 public:
     Entity()
-        {
+    {
         occupied = max_occ;
         energy = start_nrg;
         obj_id = getCounter()++;
@@ -93,30 +94,30 @@ public:
         return false;
     }
 
-    static ProductionEntry* check_and_build(std::array<std::list<AbstractEntity*>*, 64> &entities_done, unsigned int& minerals, unsigned int& gas, unsigned int& supply_used, unsigned int supply, unsigned int& available_workers){
-        if(sppl > supply-supply_used) throw noSupplyException();
+    static ProductionEntry* check_and_build(struct GameState& currentState){
+        if(sppl > currentState.supply-currentState.supply_used) throw noSupplyException();
         //bitmask of 0 is interpreted as there not being any requirements, since all entities should be buildable somehow
         if(req_mask == 0)goto req_fulfilled;
         for(int req_id : mask_to_vector<req_mask>()){
-            if(!(entities_done[req_id]->empty()))goto req_fulfilled;
+            if(!(currentState.entitymap[req_id]->empty()))goto req_fulfilled;
         }
         throw requirementNotFulfilledException();
         req_fulfilled:
-        if(gas < gs) throw noGasException();
-        if(minerals < mins)throw noMineralsException();
+        if(currentState.gas < gs) throw noGasException();
+        if(currentState.minerals < mins)throw noMineralsException();
 
         //possibly search for chronoboosted producers?
         for(int prd_id : mask_to_vector<prd_mask>()){
-            std::list<AbstractEntity*> possible_producers = *(entities_done[prd_id]);
+            std::list<AbstractEntity*> possible_producers = *(currentState.entitymap[prd_id]);
             for(std::list<AbstractEntity*>::iterator it = possible_producers.begin();it != possible_producers.end();++it){
                 AbstractEntity* producer = *it;
                 if(producer->check_and_occupy()){
-                    if(producer->is_worker())available_workers--;
-                    if(prd_d == Destiny::freed)producer->make_available(available_workers);
+                    if(producer->is_worker())currentState.workers_available--;
+                    if(prd_d == Destiny::freed)producer->make_available(currentState.workers_available);
                     if(prd_d == Destiny::consumed_at_start)possible_producers.erase(it);
-                    minerals -= mins;
-                    gas -= gs;
-                    supply_used += sppl;
+                    currentState.minerals -= mins;
+                    currentState.gas -= gs;
+                    currentState.supply_used += sppl;
                     AbstractEntity* producee = new Entity<race, clss_id, mins, gs, sppl, sppl_p, max_nrg, start_nrg, ablty_cost, prd_mask, prd_d, req_mask, max_occ, bldtime, is_wrkr, prd_larva, units_produced>();
                     ProductionEntry* e = new ProductionEntry(producee, producer, bldtime, it);
                     return e;
