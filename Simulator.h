@@ -28,9 +28,9 @@ typedef ProductionEntry* (*build_and_check)(GameState& state);
 
 class Simulator{
 private:
-    const std::map<std::string, build_and_check> build_map;
-    const std::map<int, std::string> name_map;
-    const GameState initialState;
+    const std::map<std::string, build_and_check>& build_map;
+    const std::map<int, std::string>& name_map;
+    const GameState& initialState;
     const unsigned int worker_id;
     const unsigned int gas_id;
     GameState currentState;
@@ -45,9 +45,15 @@ private:
             if(entry->time_done == currentState.time_tick) {
                 //TODO: Add to enity list
                 currentState.entitymap[(entry->producee)->class_id()]->push_back(entry->producee);
+                std::list<AbstractEntity*>* producers = currentState.entitymap[(entry->producer)->class_id()];
                 switch(entry->producee->producer_destiny()) {
                     case consumed_at_end:
-                        currentState.entitymap[(entry->producee)->class_id()]->erase(entry->it); //TODO: Delete at correct place
+                        for(std::list<AbstractEntity*>::iterator it = producers->begin();it != producers->end();++it){
+                            if(*it == entry->producer){
+                                producers->erase(it);
+                                break;
+                            }
+                        }
                         break;
                     case occupied:
                         entry->producer->make_available(currentState.workers_available);
@@ -119,8 +125,10 @@ json run(std::vector<std::string> lines){
                 events.push_back(event);
                 if(entry->producee->producer_destiny() == Destiny::consumed_at_end || 
                     entry->producee->producer_destiny() == Destiny::consumed_at_start){
+                    std::cout << "deleting consumed producer" << entry->producer->class_id() << "\n";
                     delete entry->producer;
                 }
+                std::cout << "deleting prod entry "<< entry->producee->class_id() <<"\n";
                 delete entry;
             }
         }

@@ -119,7 +119,7 @@ public:
                     currentState.gas -= gs;
                     currentState.supply_used += sppl;
                     AbstractEntity* producee = new Entity<race, clss_id, mins, gs, sppl, sppl_p, max_nrg, start_nrg, ablty_cost, prd_mask, prd_d, req_mask, max_occ, bldtime, is_wrkr, prd_larva, units_produced>();
-                    ProductionEntry* e = new ProductionEntry(producee, producer, bldtime, it);
+                    ProductionEntry* e = new ProductionEntry(producee, producer, bldtime);
                     return e;
                 }
             }
