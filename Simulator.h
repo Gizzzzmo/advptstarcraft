@@ -30,6 +30,7 @@ private:
     const GameState& initialState;
     const unsigned int worker_id;
     const unsigned int gas_id;
+    const std::vector<unsigned int> base_ids;
     GameState currentState;
 
 
@@ -41,6 +42,7 @@ private:
             ++it;
             if(entry->time_done == currentState.time_tick) {
                 //TODO: Add to enity list
+                if(entry->producee->is_worker())currentState.workers_available++;
                 currentState.entitymap[(entry->producee)->class_id()]->push_back(entry->producee);
                 std::list<Entity*>* producers = currentState.entitymap[(entry->producer)->class_id()];
                 switch(entry->producee->producer_destiny()) {
@@ -75,12 +77,15 @@ private:
     }
 
     ProductionEntry* check_and_build(int class_id){
+        //std::cout << "trying to build " << meta_map[class_id].name << "\n";
         if(meta_map[class_id].supply > static_cast<int>(currentState.supply-currentState.supply_used)) throw noSupplyException();
         //bitmask of 0 is interpreted as there not being any requirements, since all entities should be buildable somehow
         if(meta_map[class_id].requirement_mask == 0)goto req_fulfilled;
         for(int req_id : mask_to_vector(meta_map[class_id].requirement_mask)){
+            //std::cout << "suitable req " << meta_map[req_id].name << "\n";
             if(!(currentState.entitymap[req_id]->empty()))goto req_fulfilled;
         }
+        //std::cout << "couldn't build " << meta_map[class_id].name << "\n";
         throw requirementNotFulfilledException();
         req_fulfilled:
         if(currentState.gas < meta_map[class_id].gas) throw noGasException();
@@ -107,14 +112,25 @@ private:
         throw noProducerAvailableException();
         return nullptr;
     }
+
+    unsigned int number_of_bases(){
+        unsigned int sum = 0;
+        for(unsigned int id : base_ids){
+            //std::cout << meta_map[id].name << "exists " << currentState.entitymap[id]->size() << " many times\n";
+            sum += currentState.entitymap[id]->size();
+        }
+        //std::cout << "total number of bases: " << sum << "\n";
+        return sum;
+    }
 public:
 
 Simulator(const std::array<EntityMeta, 64>& meta_map,
             const std::map<std::string, int>& name_map,
             const GameState initialState,
             const unsigned int gas_id,
-            const unsigned int worker_id) :
-    meta_map(meta_map), name_map(name_map), initialState(initialState), gas_id(gas_id), worker_id(worker_id){}
+            const unsigned int worker_id, 
+            const std::vector<unsigned int>& base_ids) :
+    meta_map(meta_map), name_map(name_map), initialState(initialState), gas_id(gas_id), worker_id(worker_id), base_ids(base_ids){}
 
 json run(std::vector<std::string> lines){
     currentState = initialState;
@@ -211,9 +227,10 @@ json run(std::vector<std::string> lines){
                 built = false;
             }
         }
-        unsigned int max_gas_worker = std::min(currentState.entitymap[0]->size()*6, currentState.entitymap[gas_id]->size()*3);
+        unsigned int max_gas_worker = std::min(number_of_bases()*6, static_cast<unsigned int>(currentState.entitymap[gas_id]->size()*3));
         unsigned int new_gas_worker = std::min(max_gas_worker, currentState.workers_available/2);
-        unsigned int new_mineral_worker = currentState.workers_available - new_gas_worker;
+        unsigned int new_mineral_worker = std::min(currentState.workers_available - new_gas_worker, number_of_bases()*16);
+        //std::cout << currentState.workers_available - new_gas_worker << " " << new_mineral_worker << "\n";
         if(new_gas_worker != currentState.gas_worker || new_mineral_worker != currentState.mineral_worker){
             generate_json = true;
             currentState.gas_worker = new_gas_worker;
