@@ -3,12 +3,9 @@
 
 class ProductionEntry{
 public:
-    AbstractEntity* producee;
-    AbstractEntity* producer;
+    Entity* producee;
+    Entity* producer;
     unsigned int time_done;
-    ProductionEntry(AbstractEntity* producee, AbstractEntity* producer, unsigned int time_done) :
-    producee(producee), producer(producer), time_done(time_done){}
-    void addTime(unsigned int time){
-        time_done += time;
-    }
+    ProductionEntry(Entity* producee, Entity* producer, GameState& state) :
+    producee(producee), producer(producer), time_done(state.time_tick + producee->build_time()){}
 };

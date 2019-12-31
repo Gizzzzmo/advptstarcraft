@@ -7,29 +7,26 @@ using json = nlohmann::json;
 #include <iostream>
 #include <algorithm>
 
+#include "ProductionEntry.h"
 #include "Entity.h"
-#include "AbstractEntity.h"
 #include "StarcraftExceptions.h"
+#include "GameState.h"
 
-typedef struct GameState{
-    unsigned int time_tick;
-    unsigned int minerals;
-    unsigned int gas;
-    unsigned int supply;
-    unsigned int supply_used;
-    unsigned int workers_available;
-    unsigned int mineral_worker;
-    unsigned int gas_worker;
-    std::array<std::list<AbstractEntity*>*, 64> entitymap;
-    std::list<ProductionEntry*> production_list;
-} GameState;
-
-typedef ProductionEntry* (*build_and_check)(GameState& state);
+//turns a bitmask into a vector of those indices of the mask, where the bit is one
+//TODO: for performance improvements, one might buffer theses vectors
+inline std::vector<int> mask_to_vector(unsigned long mask) {
+    std::vector<int> v;
+    for(size_t i = 0;i < 64;++i){
+        if(mask%2 == 1)v.push_back(i);
+        mask = mask>>1;
+    }
+    return v;
+}
 
 class Simulator{
 private:
-    const std::map<std::string, build_and_check>& build_map;
-    const std::map<int, std::string>& name_map;
+    const std::array<EntityMeta, 64>& meta_map;
+    const std::map<std::string, int>& name_map;
     const GameState& initialState;
     const unsigned int worker_id;
     const unsigned int gas_id;
@@ -45,10 +42,10 @@ private:
             if(entry->time_done == currentState.time_tick) {
                 //TODO: Add to enity list
                 currentState.entitymap[(entry->producee)->class_id()]->push_back(entry->producee);
-                std::list<AbstractEntity*>* producers = currentState.entitymap[(entry->producer)->class_id()];
+                std::list<Entity*>* producers = currentState.entitymap[(entry->producer)->class_id()];
                 switch(entry->producee->producer_destiny()) {
                     case consumed_at_end:
-                        for(std::list<AbstractEntity*>::iterator it = producers->begin();it != producers->end();++it){
+                        for(std::list<Entity*>::iterator it = producers->begin();it != producers->end();++it){
                             if(*it == entry->producer){
                                 producers->erase(it);
                                 break;
@@ -56,7 +53,7 @@ private:
                         }
                         break;
                     case occupied:
-                        entry->producer->make_available(currentState.workers_available);
+                        entry->producer->make_available(currentState);
                         break;
                 }
                 currentState.production_list.erase(prev);
@@ -76,14 +73,48 @@ private:
         output["buildlistValid"] = 0;
         std::cerr << message << "\n";
     }
+
+    ProductionEntry* check_and_build(int class_id){
+        if(meta_map[class_id].supply > static_cast<int>(currentState.supply-currentState.supply_used)) throw noSupplyException();
+        //bitmask of 0 is interpreted as there not being any requirements, since all entities should be buildable somehow
+        if(meta_map[class_id].requirement_mask == 0)goto req_fulfilled;
+        for(int req_id : mask_to_vector(meta_map[class_id].requirement_mask)){
+            if(!(currentState.entitymap[req_id]->empty()))goto req_fulfilled;
+        }
+        throw requirementNotFulfilledException();
+        req_fulfilled:
+        if(currentState.gas < meta_map[class_id].gas) throw noGasException();
+        if(currentState.minerals < meta_map[class_id].minerals)throw noMineralsException();
+
+        //possibly search for chronoboosted producers?
+        for(int prd_id : mask_to_vector(meta_map[class_id].production_mask)){
+            std::list<Entity*> possible_producers = *(currentState.entitymap[prd_id]);
+            for(std::list<Entity*>::iterator it = possible_producers.begin();it != possible_producers.end();++it){
+                Entity* producer = *it;
+                if(producer->check_and_occupy()){
+                    if(producer->is_worker())currentState.workers_available--;
+                    if(meta_map[class_id].producer_destiny == Destiny::freed)producer->make_available(currentState);
+                    if(meta_map[class_id].producer_destiny == Destiny::consumed_at_start)possible_producers.erase(it);
+                    currentState.minerals -= meta_map[class_id].minerals;
+                    currentState.gas -= meta_map[class_id].gas;
+                    currentState.supply_used += meta_map[class_id].supply;
+                    Entity* producee = new Entity(meta_map, class_id);
+                    ProductionEntry* e = new ProductionEntry(producee, producer, currentState);
+                    return e;
+                }
+            }
+        }
+        throw noProducerAvailableException();
+        return nullptr;
+    }
 public:
 
-Simulator(const std::map<std::string, build_and_check>& build_map,
-            const std::map<int, std::string>& name_map,
+Simulator(const std::array<EntityMeta, 64>& meta_map,
+            const std::map<std::string, int>& name_map,
             const GameState initialState,
             const unsigned int gas_id,
             const unsigned int worker_id) :
-    build_map(build_map), name_map(name_map), initialState(initialState), gas_id(gas_id), worker_id(worker_id){}
+    meta_map(meta_map), name_map(name_map), initialState(initialState), gas_id(gas_id), worker_id(worker_id){}
 
 json run(std::vector<std::string> lines){
     currentState = initialState;
@@ -119,35 +150,31 @@ json run(std::vector<std::string> lines){
             for(ProductionEntry* entry : finished_list){
                 json event;
                 event["type"] = "build-end";
-                event["name"] = name_map.find(entry->producee->class_id())->second;
+                event["name"] = meta_map[entry->producee->class_id()].name;
                 event["producerID"] = entry->producer->id();
                 event["producedIDs"] = {entry->producee->id()};
                 events.push_back(event);
                 if(entry->producee->producer_destiny() == Destiny::consumed_at_end || 
                     entry->producee->producer_destiny() == Destiny::consumed_at_start){
-                    std::cout << "deleting consumed producer" << entry->producer->class_id() << "\n";
                     delete entry->producer;
                 }
-                std::cout << "deleting prod entry "<< entry->producee->class_id() <<"\n";
                 delete entry;
             }
         }
 
         if(!nomorebuilding){
-            auto fff = build_map.find(line);
-            if(build_map.find(line) == build_map.end()){
+            auto fff = name_map.find(line);
+            if(name_map.find(line) == name_map.end()){
                 error_exit(line + " Entity not found", output);
                 return output;
             }
-            build_and_check f = fff->second;
             ProductionEntry* entry;
             try{
-                entry = (*f)(currentState);
+                entry = check_and_build(fff->second);
                 generate_json = true;
-                entry->addTime(currentState.time_tick);
                 json build_start_event;
                 build_start_event["type"] = "build-start";
-                build_start_event["name"] = name_map.find(entry->producee->class_id())->second;
+                build_start_event["name"] = meta_map[entry->producee->class_id()].name;
                 build_start_event["producerID"] = entry->producer->id();
                 events.push_back(build_start_event);
                 currentState.production_list.push_back(entry);
