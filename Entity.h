@@ -2,6 +2,7 @@
 #include <string>
 #include <array>
 #include <sstream>
+#include <memory>
 
 #include "GameState.h"
 

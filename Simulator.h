@@ -6,6 +6,7 @@ using json = nlohmann::json;
 #include <list>
 #include <iostream>
 #include <algorithm>
+#include <memory>
 
 #include "ProductionEntry.h"
 #include "Entity.h"
@@ -25,27 +26,28 @@ inline std::vector<int> mask_to_vector(unsigned long mask) {
 
 class Simulator{
 private:
+    const unsigned int worker_id;
+    const unsigned int gas_id;
     const std::array<EntityMeta, 64>& meta_map;
     const std::map<std::string, int>& name_map;
     const GameState& initialState;
-    const unsigned int worker_id;
-    const unsigned int gas_id;
     GameState currentState;
 
 
-    inline std::list<ProductionEntry*> process_production_list(){
-        std::list<ProductionEntry*> result;
-        for(std::list<ProductionEntry*>::iterator it = currentState.production_list.begin(); it != currentState.production_list.end();) {
-            ProductionEntry* entry = *it;
+    inline std::list<std::shared_ptr<ProductionEntry>> process_production_list(){
+        std::list<std::shared_ptr<ProductionEntry>> result;
+        for(std::list<std::shared_ptr<ProductionEntry>>::iterator it = currentState.production_list.begin(); it != currentState.production_list.end();) {
+            std::shared_ptr<ProductionEntry> entry = *it;
             auto prev = it;
             ++it;
             if(entry->time_done == currentState.time_tick) {
                 //TODO: Add to enity list
                 currentState.entitymap[(entry->producee)->class_id()]->push_back(entry->producee);
-                std::list<Entity*>* producers = currentState.entitymap[(entry->producer)->class_id()];
+                std::shared_ptr<std::list<std::shared_ptr<Entity>>> producers = currentState.entitymap[(entry->producer)->class_id()];
+                //std::list<Entity*>* producers = currentState.entitymap[(entry->producer)->class_id()];
                 switch(entry->producee->producer_destiny()) {
                     case consumed_at_end:
-                        for(std::list<Entity*>::iterator it = producers->begin();it != producers->end();++it){
+                    	for(std::list<std::shared_ptr<Entity>>::iterator it = producers->begin();it != producers->end();++it){
                             if(*it == entry->producer){
                                 producers->erase(it);
                                 break;
@@ -55,6 +57,10 @@ private:
                     case occupied:
                         entry->producer->make_available(currentState);
                         break;
+                    case freed:
+                    	break;
+                    case consumed_at_start:
+                    	break;
                 }
                 currentState.production_list.erase(prev);
                 currentState.supply += entry->producee->supply_provided();
@@ -74,7 +80,7 @@ private:
         std::cerr << message << "\n";
     }
 
-    ProductionEntry* check_and_build(int class_id){
+    std::shared_ptr<ProductionEntry> check_and_build(int class_id){
         if(meta_map[class_id].supply > static_cast<int>(currentState.supply-currentState.supply_used)) throw noSupplyException();
         //bitmask of 0 is interpreted as there not being any requirements, since all entities should be buildable somehow
         if(meta_map[class_id].requirement_mask == 0)goto req_fulfilled;
@@ -88,18 +94,18 @@ private:
 
         //possibly search for chronoboosted producers?
         for(int prd_id : mask_to_vector(meta_map[class_id].production_mask)){
-            std::list<Entity*> possible_producers = *(currentState.entitymap[prd_id]);
-            for(std::list<Entity*>::iterator it = possible_producers.begin();it != possible_producers.end();++it){
-                Entity* producer = *it;
+            std::shared_ptr<std::list<std::shared_ptr<Entity>>> possible_producers = currentState.entitymap[prd_id];
+            for(std::list<std::shared_ptr<Entity>>::iterator it = possible_producers->begin();it != possible_producers->end();++it){
+                std::shared_ptr<Entity> producer = *it;
                 if(producer->check_and_occupy()){
                     if(producer->is_worker())currentState.workers_available--;
                     if(meta_map[class_id].producer_destiny == Destiny::freed)producer->make_available(currentState);
-                    if(meta_map[class_id].producer_destiny == Destiny::consumed_at_start)possible_producers.erase(it);
+                    if(meta_map[class_id].producer_destiny == Destiny::consumed_at_start)possible_producers->erase(it);
                     currentState.minerals -= meta_map[class_id].minerals;
                     currentState.gas -= meta_map[class_id].gas;
                     currentState.supply_used += meta_map[class_id].supply;
-                    Entity* producee = new Entity(meta_map, class_id);
-                    ProductionEntry* e = new ProductionEntry(producee, producer, currentState);
+                    std::shared_ptr<Entity> producee(new Entity(meta_map, class_id));
+                    std::shared_ptr<ProductionEntry> e(new ProductionEntry(producee, producer, currentState));
                     return e;
                 }
             }
@@ -144,10 +150,10 @@ json run(std::vector<std::string> lines){
             else if(currentState.production_list.empty())break;
             else nomorebuilding = true;
         }
-        std::list <ProductionEntry*> finished_list = process_production_list();
+        std::list <std::shared_ptr<ProductionEntry>> finished_list = process_production_list();
         if (!finished_list.empty()) {
             generate_json = true;
-            for(ProductionEntry* entry : finished_list){
+            for(std::shared_ptr<ProductionEntry> entry : finished_list){
                 json event;
                 event["type"] = "build-end";
                 event["name"] = meta_map[entry->producee->class_id()].name;
@@ -156,9 +162,9 @@ json run(std::vector<std::string> lines){
                 events.push_back(event);
                 if(entry->producee->producer_destiny() == Destiny::consumed_at_end || 
                     entry->producee->producer_destiny() == Destiny::consumed_at_start){
-                    delete entry->producer;
+                    //delete entry->producer;
                 }
-                delete entry;
+                //delete entry;
             }
         }
 
@@ -168,7 +174,7 @@ json run(std::vector<std::string> lines){
                 error_exit(line + " Entity not found", output);
                 return output;
             }
-            ProductionEntry* entry;
+            std::shared_ptr<ProductionEntry> entry;
             try{
                 entry = check_and_build(fff->second);
                 generate_json = true;
@@ -177,6 +183,8 @@ json run(std::vector<std::string> lines){
                 build_start_event["name"] = meta_map[entry->producee->class_id()].name;
                 build_start_event["producerID"] = entry->producer->id();
                 events.push_back(build_start_event);
+                GameState a = currentState;
+                std::list<std::shared_ptr<ProductionEntry>> b = a.production_list;
                 currentState.production_list.push_back(entry);
                 built = true;
             }catch(noMineralsException& e){

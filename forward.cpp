@@ -6,12 +6,16 @@ using json = nlohmann::json;
 #include <list>
 #include <vector>
 #include <array>
+#include <memory>
+//https://thispointer.com/learning-shared_ptr-part-1-usage-details/
 
 enum Race{Terran, Zerg, Protoss};
 
 int main(int argc, char** argv){
-    std::string racearg(argv[1]);
+    /*std::string racearg(argv[1]);
     Race race = !racearg.compare("terran") ? Race::Terran : !racearg.compare("zerg") ? Race::Zerg : Race::Protoss;
+    */
+	Race race = Race::Terran;
     int worker_id;
     int gas_id;
     unsigned int supply = 15;
@@ -19,43 +23,61 @@ int main(int argc, char** argv){
     std::map<std::string, int> name_map;
 
     //keep in mind minerals and gas are in hundredths
-    std::array<std::list<Entity*>*, 64> entitymap;
-    std::list<ProductionEntry*> production_list;
-    for (int i = 0; i<entitymap.size(); i++){
-        entitymap[i] = new std::list<Entity*>();
+    std::array<std::shared_ptr<std::list<std::shared_ptr<Entity>>>, 64> entitymap;
+    std::list<std::shared_ptr<ProductionEntry>> production_list;
+    for (unsigned int i = 0; i<entitymap.size(); i++){
+        //entitymap[i] = new std::list<Entity*>();
+    	std::shared_ptr<std::list<std::shared_ptr<Entity>>> a(new std::list<std::shared_ptr<Entity>>());
+    	entitymap[i] = a;
     }
     std::array<EntityMeta, 64> meta_map;
+
     switch(race){
         case Terran:
+        {
             #include "unit_map_terran.h"
             worker_id = 4;
             gas_id = 25;
             for(int i = 0;i < 12;i++){
-                entitymap[4]->push_back(new Entity(meta_map, 4));
+            	std::shared_ptr<Entity> a(new Entity(meta_map, 4));
+                entitymap[4]->push_back(a);
             }
-            entitymap[0]->push_back(new Entity(meta_map, 0));
+            std::shared_ptr<Entity> a(new Entity(meta_map, 0));
+            entitymap[0]->push_back(a);
             break;
+        }
         case Zerg:
+        {
             #include "unit_map_zerg.h"
             worker_id = 9;
             gas_id = 20;
             for(int i = 0;i < 12;i++){
-                entitymap[9]->push_back(new Entity(meta_map, 9));
+            	std::shared_ptr<Entity> a(new Entity(meta_map, 9));
+                entitymap[9]->push_back(a);
             }
-            entitymap[0]->push_back(new Entity(meta_map, 0));
-            entitymap[16]->push_back(new Entity(meta_map, 16));
+            std::shared_ptr<Entity> a(new Entity( meta_map, 0));
+            std::shared_ptr<Entity> b(new Entity( meta_map, 0));
+            entitymap[0]->push_back(a);
+            entitymap[16]->push_back(b);
             supply = 14;
             break;
+        }
         case Protoss:
+        {
             #include "unit_map_protoss.h"
             worker_id = 5;
             gas_id = 7;
             for(int i = 0;i < 12;i++){
-                entitymap[5]->push_back(new Entity(meta_map, 5));
+            	std::shared_ptr<Entity> a(new Entity( meta_map, 5));
+            	entitymap[5]->push_back(a);
             }
-            entitymap[0]->push_back(new Entity(meta_map, 0));
+            std::shared_ptr<Entity> a(new Entity( meta_map, 0));
+            entitymap[0]->push_back(a);
             break;
+        }
     }
+    std::cout << "Step 3\n";
+
     const GameState initialState{1, 5000, 0, supply, 12, 12, 12, 0, entitymap, {}};
 
     std::vector<std::string> lines;
@@ -65,17 +87,18 @@ int main(int argc, char** argv){
         if (entitymap[i]->empty())
             continue;
         std::list<std::string> l;
-        for( std::list<Entity*>::iterator jt = entitymap[i]->begin(); jt != entitymap[i]->end(); ++jt){
+        for( std::list<std::shared_ptr<Entity>>::iterator jt = entitymap[i]->begin(); jt != entitymap[i]->end(); ++jt){
             l.push_back((*jt)->id());
         }
         initial_units[meta_map[i].name] = l;
     }
-
     while(std::cin){
         std::string line; 
         std::getline(std::cin, line);
         if(line != "")lines.push_back(line);
+        if(line == "") break;
     }
+    std::cout << "Input finished\n";
     Simulator sim(meta_map, name_map, initialState, gas_id, worker_id);
     json output = sim.run(lines);
     output["game"] = race == Race::Terran ? "Terr" : race == Race::Zerg ? "Zerg" : "Prot";

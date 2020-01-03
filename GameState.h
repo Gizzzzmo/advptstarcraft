@@ -2,6 +2,7 @@
 
 #include <array>
 #include <list>
+#include <memory>
 
 class ProductionEntry;
 class Entity;
@@ -15,6 +16,6 @@ typedef struct GameState{
     unsigned int workers_available;
     unsigned int mineral_worker;
     unsigned int gas_worker;
-    std::array<std::list<Entity*>*, 64> entitymap;
-    std::list<ProductionEntry*> production_list;
+    std::array<std::shared_ptr<std::list<std::shared_ptr<Entity>>>, 64> entitymap;
+    std::list<std::shared_ptr<ProductionEntry>> production_list;
 } GameState;
