@@ -54,6 +54,7 @@ public:
         ss >> idd;
 
     }
+
     inline int class_id() const{
         return clss_id;
     }

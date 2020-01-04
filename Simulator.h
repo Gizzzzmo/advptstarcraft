@@ -113,6 +113,56 @@ private:
         throw noProducerAvailableException();
         return nullptr;
     }
+
+    inline json make_json_message(const GameState &currentGameState, const std::vector<json> events) {
+    	json message;
+        message["time"] = currentState.time_tick;
+        message["status"] = {};
+        message["status"]["workers"] = {};
+        message["status"]["workers"]["minerals"] = currentState.mineral_worker;
+        message["status"]["workers"]["vespene"] = currentState.gas_worker;
+        message["status"]["resources"] = {};
+        message["status"]["resources"]["minerals"] = currentState.minerals/100;
+        message["status"]["resources"]["vespene"] = currentState.gas/100;
+        message["status"]["resources"]["supply-used"] = currentState.supply_used;
+        message["status"]["resources"]["supply"] = currentState.supply;
+        message["events"] = events;
+        return message;
+    }
+
+
+	inline void generate_json_build_end(std::vector<json> &events, std::list <std::shared_ptr<ProductionEntry>> &finished_list) {
+		for(std::shared_ptr<ProductionEntry> entry : finished_list){
+			json event;
+			event["type"] = "build-end";
+			event["name"] = meta_map[entry->producee->class_id()].name;
+			event["producerID"] = entry->producer->id();
+			event["producedIDs"] = {entry->producee->id()};
+			events.push_back(event);
+		}
+	}
+
+
+	inline void generate_json_build_start(std::vector<json> &events, const std::shared_ptr<ProductionEntry> &entry) {
+        json build_start_event;
+        build_start_event["type"] = "build-start";
+        build_start_event["name"] = meta_map[entry->producee->class_id()].name;
+        build_start_event["producerID"] = entry->producer->id();
+        events.push_back(build_start_event);
+	}
+
+	inline bool update_worker_distribution() {
+        unsigned int max_gas_worker = std::min(currentState.entitymap[0]->size()*6, currentState.entitymap[gas_id]->size()*3);
+        unsigned int new_gas_worker = std::min(max_gas_worker, currentState.workers_available/2);
+        unsigned int new_mineral_worker = currentState.workers_available - new_gas_worker;
+        if(new_gas_worker != currentState.gas_worker || new_mineral_worker != currentState.mineral_worker){
+            currentState.gas_worker = new_gas_worker;
+            currentState.mineral_worker = new_mineral_worker;
+            return true;
+        } else
+        	return false;
+	}
+
 public:
 
 Simulator(const std::array<EntityMeta, 64>& meta_map,
@@ -126,120 +176,114 @@ json run(std::vector<std::string> lines){
     currentState = initialState;
 
     bool built = true;
-    bool nomorebuilding = false;
+    bool generate_json;
     std::vector<json> messages;
-    int next_line = 0;
+    unsigned int next_line = 0;
     std::string line;
 
     json output;
 
-    for(;1;++currentState.time_tick){
-        if(currentState.time_tick > 1000){
+    // 1. Liste abarbeiten
+    std::cout << "Process list\n";
+    while(next_line != lines.size() || !built) {
+    	//Init timestep
+    	if((++currentState.time_tick) > 1000){
             error_exit("Exceeded max time", output);
             return output;
         }
-        update_resources();
-        json message;
-        message["time"] = currentState.time_tick;
-
+    	generate_json = false;
         std::vector<json> events;
-        bool generate_json = false;
-        if(built){
-            if(next_line != lines.size())
-                line = lines[next_line++];
-            else if(currentState.production_list.empty())break;
-            else nomorebuilding = true;
-        }
+
+    	update_resources();
+
+    	//Check finished buildings
         std::list <std::shared_ptr<ProductionEntry>> finished_list = process_production_list();
-        if (!finished_list.empty()) {
-            generate_json = true;
-            for(std::shared_ptr<ProductionEntry> entry : finished_list){
-                json event;
-                event["type"] = "build-end";
-                event["name"] = meta_map[entry->producee->class_id()].name;
-                event["producerID"] = entry->producer->id();
-                event["producedIDs"] = {entry->producee->id()};
-                events.push_back(event);
-                if(entry->producee->producer_destiny() == Destiny::consumed_at_end || 
-                    entry->producee->producer_destiny() == Destiny::consumed_at_start){
-                    //delete entry->producer;
-                }
-                //delete entry;
-            }
+    	if (!finished_list.empty()) {
+    		generate_json = true;
+			generate_json_build_end(events, finished_list);
+    	}
+
+    	//Start new buildings
+        if(built) {
+        	line = lines[next_line++];
+        }
+        auto fff = name_map.find(line);
+        if(name_map.find(line) == name_map.end()){
+            error_exit(line + " Entity not found", output);
+            return output;
         }
 
-        if(!nomorebuilding){
-            auto fff = name_map.find(line);
-            if(name_map.find(line) == name_map.end()){
-                error_exit(line + " Entity not found", output);
+        std::shared_ptr<ProductionEntry> entry;
+        try{
+            entry = check_and_build(fff->second);
+            built = true;
+        }catch(noMineralsException& e){
+            if(currentState.entitymap[worker_id]->empty() && currentState.production_list.empty()){
+                error_exit("No Minerals", output);
                 return output;
             }
-            std::shared_ptr<ProductionEntry> entry;
-            try{
-                entry = check_and_build(fff->second);
-                generate_json = true;
-                json build_start_event;
-                build_start_event["type"] = "build-start";
-                build_start_event["name"] = meta_map[entry->producee->class_id()].name;
-                build_start_event["producerID"] = entry->producer->id();
-                events.push_back(build_start_event);
-                GameState a = currentState;
-                std::list<std::shared_ptr<ProductionEntry>> b = a.production_list;
-                currentState.production_list.push_back(entry);
-                built = true;
-            }catch(noMineralsException& e){
-                if(currentState.entitymap[worker_id]->empty() && currentState.production_list.empty()){
-                    error_exit("No Minerals", output);
-                    return output;
-                }
-                built = false;
-            }catch(noGasException& e){
-                if(currentState.entitymap[gas_id]->empty() && currentState.production_list.empty()){
-                    error_exit("No Gas", output);
-                    return output;
-                }
-                built = false;
-            }catch(noSupplyException& e){
-                if(currentState.production_list.empty()){
-                    error_exit("No supply", output);
-                    return output;
-                }
-                built = false;
-            }catch(noProducerAvailableException& e){
-                if(currentState.production_list.empty()){
-                    error_exit("No Producer Available", output);
-                    return output;
-                }
-                built = false;
-            }catch(requirementNotFulfilledException& e){
-                if(currentState.production_list.empty()){
-                    error_exit("Requirement Not Fullfilled", output);
-                    return output;
-                }
-                built = false;
+            built = false;
+        }catch(noGasException& e){
+            if(currentState.entitymap[gas_id]->empty() && currentState.production_list.empty()){
+                error_exit("No Gas", output);
+                return output;
             }
+            built = false;
+        }catch(noSupplyException& e){
+            if(currentState.production_list.empty()){
+                error_exit("No supply", output);
+                return output;
+            }
+            built = false;
+        }catch(noProducerAvailableException& e){
+            if(currentState.production_list.empty()){
+                error_exit("No Producer Available", output);
+                return output;
+            }
+            built = false;
+        }catch(requirementNotFulfilledException& e){
+            if(currentState.production_list.empty()){
+                error_exit("Requirement not fulfilled", output);
+                return output;
+            }
+            built = false;
         }
-        unsigned int max_gas_worker = std::min(currentState.entitymap[0]->size()*6, currentState.entitymap[gas_id]->size()*3);
-        unsigned int new_gas_worker = std::min(max_gas_worker, currentState.workers_available/2);
-        unsigned int new_mineral_worker = currentState.workers_available - new_gas_worker;
-        if(new_gas_worker != currentState.gas_worker || new_mineral_worker != currentState.mineral_worker){
-            generate_json = true;
-            currentState.gas_worker = new_gas_worker;
-            currentState.mineral_worker = new_mineral_worker;
+        if(built) {
+        	currentState.production_list.push_back(entry);
+			generate_json = true;
+			generate_json_build_start(events, entry);
         }
-        //TODO recalculate worker distribution
+
+        if(update_worker_distribution())
+        	generate_json = true;
+
         if(generate_json){
-            message["status"] = {};
-            message["status"]["workers"] = {};
-            message["status"]["workers"]["minerals"] = currentState.mineral_worker;
-            message["status"]["workers"]["vespene"] = currentState.gas_worker;
-            message["status"]["resources"] = {};
-            message["status"]["resources"]["minerals"] = currentState.minerals/100;
-            message["status"]["resources"]["vespene"] = currentState.gas/100;
-            message["status"]["resources"]["supply-used"] = currentState.supply_used;
-            message["status"]["resources"]["supply"] = currentState.supply;
-            message["events"] = events;
-            messages.push_back(message);
+            messages.push_back(make_json_message(currentState, events));
+        }
+    }
+
+    // 2. Warte auf Fertigstellung
+    while(!currentState.production_list.empty()){
+        if((++currentState.time_tick) > 1000){
+            error_exit("Exceeded max time", output);
+            return output;
+        }
+        generate_json = false;
+        std::vector<json> events;
+
+        update_resources();
+
+        std::list <std::shared_ptr<ProductionEntry>> finished_list = process_production_list();
+    	if (!finished_list.empty()) {
+			generate_json = true;
+			generate_json_build_end(events, finished_list);
+    	}
+
+        if(update_worker_distribution())
+        	generate_json = true;
+
+        if(generate_json){
+            messages.push_back(make_json_message(currentState, events));
         }
     }
     output["buildlistValid"] = 1;

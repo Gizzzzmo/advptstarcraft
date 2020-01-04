@@ -76,9 +76,8 @@ int main(int argc, char** argv){
             break;
         }
     }
-    std::cout << "Step 3\n";
 
-    const GameState initialState{1, 5000, 0, supply, 12, 12, 12, 0, entitymap, {}};
+    const GameState initialState{1, 5000, 0, supply, 12, 12, 12, 0, entitymap, {}, {}};
 
     std::vector<std::string> lines;
     json initial_units;
@@ -98,7 +97,6 @@ int main(int argc, char** argv){
         if(line != "")lines.push_back(line);
         if(line == "") break;
     }
-    std::cout << "Input finished\n";
     Simulator sim(meta_map, name_map, initialState, gas_id, worker_id);
     json output = sim.run(lines);
     output["game"] = race == Race::Terran ? "Terr" : race == Race::Zerg ? "Zerg" : "Prot";

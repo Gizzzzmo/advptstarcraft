@@ -18,4 +18,5 @@ typedef struct GameState{
     unsigned int gas_worker;
     std::array<std::shared_ptr<std::list<std::shared_ptr<Entity>>>, 64> entitymap;
     std::list<std::shared_ptr<ProductionEntry>> production_list;
+    std::list<std::pair<std::shared_ptr<Entity>, unsigned int>> special_entities; //Contains upgraded main building (Terran) or list of queens (Zerg) and corresponding special energy
 } GameState;
