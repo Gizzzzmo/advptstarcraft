@@ -32,12 +32,14 @@ int main(int argc, char** argv){
     }
     std::array<EntityMeta, 64> meta_map;
 
+    std::vector<unsigned int> base_ids;
     switch(race){
         case Terran:
         {
             #include "unit_map_terran.h"
             worker_id = 4;
             gas_id = 25;
+            base_ids = {0, 1, 2};
             for(int i = 0;i < 12;i++){
             	std::shared_ptr<Entity> a(new Entity(meta_map, 4));
                 entitymap[4]->push_back(a);
@@ -51,6 +53,7 @@ int main(int argc, char** argv){
             #include "unit_map_zerg.h"
             worker_id = 9;
             gas_id = 20;
+            base_ids = {0, 3, 17};
             for(int i = 0;i < 12;i++){
             	std::shared_ptr<Entity> a(new Entity(meta_map, 9));
                 entitymap[9]->push_back(a);
@@ -67,6 +70,7 @@ int main(int argc, char** argv){
             #include "unit_map_protoss.h"
             worker_id = 5;
             gas_id = 7;
+            base_ids = {0};
             for(int i = 0;i < 12;i++){
             	std::shared_ptr<Entity> a(new Entity( meta_map, 5));
             	entitymap[5]->push_back(a);
@@ -97,7 +101,7 @@ int main(int argc, char** argv){
         if(line != "")lines.push_back(line);
         if(line == "") break;
     }
-    Simulator sim(meta_map, name_map, initialState, gas_id, worker_id);
+    Simulator sim(meta_map, name_map, initialState, gas_id, worker_id, base_ids);
     json output = sim.run(lines);
     output["game"] = race == Race::Terran ? "Terr" : race == Race::Zerg ? "Zerg" : "Prot";
     output["initialUnits"] = initial_units;
