@@ -12,10 +12,9 @@ using json = nlohmann::json;
 enum Race{Terran, Zerg, Protoss};
 
 int main(int argc, char** argv){
-    /*std::string racearg(argv[1]);
+    std::string racearg(argv[1]);
     Race race = !racearg.compare("terran") ? Race::Terran : !racearg.compare("zerg") ? Race::Zerg : Race::Protoss;
-    */
-	Race race = Race::Terran;
+    
     int worker_id;
     int gas_id;
     unsigned int supply = 15;
