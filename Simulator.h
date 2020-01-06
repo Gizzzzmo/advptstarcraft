@@ -29,7 +29,6 @@ private:
     const unsigned int worker_id;
     const unsigned int gas_id;
     const std::array<EntityMeta, 64>& meta_map;
-    const std::map<std::string, int>& name_map;
     const GameState& initialState;
     const std::vector<unsigned int> base_ids;
     GameState currentState;
@@ -83,6 +82,7 @@ private:
     }
 
     std::shared_ptr<ProductionEntry> check_and_build(int class_id){
+        if(class_id == gas_id && currentState.entitymap[class_id]->size() == number_of_bases()*2)throw noGasGeyserAllowedException();
         if(meta_map[class_id].supply > static_cast<int>(currentState.supply-currentState.supply_used)) throw noSupplyException();
         //bitmask of 0 is interpreted as there not being any requirements, since all entities should be buildable somehow
         if(meta_map[class_id].requirement_mask == 0)goto req_fulfilled;
@@ -98,6 +98,7 @@ private:
         for(int prd_id : mask_to_vector(meta_map[class_id].production_mask)){
             std::shared_ptr<std::list<std::shared_ptr<Entity>>> possible_producers = currentState.entitymap[prd_id];
             for(std::list<std::shared_ptr<Entity>>::iterator it = possible_producers->begin();it != possible_producers->end();++it){
+                //std::cout << meta_map[prd_id].name << " is valid producer for " << meta_map[class_id].name << "\n";
                 std::shared_ptr<Entity> producer = *it;
                 if(producer->check_and_occupy()){
                     if(producer->is_worker())currentState.workers_available--;
@@ -153,10 +154,34 @@ private:
         events.push_back(build_start_event);
 	}
 
-	inline bool update_worker_distribution() {
-        unsigned int max_gas_worker = std::min(number_of_bases()*6, static_cast<unsigned int>(currentState.entitymap[gas_id]->size()*3));
-        unsigned int new_gas_worker = std::min(max_gas_worker, currentState.workers_available/2);
-        unsigned int new_mineral_worker = std::min(currentState.workers_available - new_gas_worker, number_of_bases()*16);
+    inline bool update_worker_distribution(std::vector<int>& lines, int current_line) {
+        //std::cout << current_line << "\n";
+        int cost_mins = 0, cost_gas = 0;
+        int gas = (int) currentState.gas;
+        int mins = (int) currentState.minerals;
+        do{
+            if(current_line >= lines.size())return false;
+            cost_mins += meta_map[lines[current_line]].minerals;
+            cost_gas += meta_map[lines[current_line]].gas;
+            
+            //std::cout << " " << meta_map[lines[current_line]].name << " " << current_line <<" "<<cost_mins << " "<< cost_gas << "\n";
+            current_line++;
+        }while(mins >= cost_mins && gas >= cost_gas);
+        int missing_mins = std::max(0, cost_mins - mins);
+        int missing_gas = std::max(0, cost_gas - gas);
+        unsigned int ideal_mineral_worker = currentState.workers_available * 63 * missing_mins/(missing_mins * 63 + missing_gas * 70);
+        unsigned int ideal_gas_worker = currentState.workers_available - ideal_mineral_worker;
+        //std::cout << ideal_mineral_worker << " " << ideal_gas_worker << "\n";
+        unsigned int max_gas_worker = static_cast<unsigned int>(currentState.entitymap[gas_id]->size()*3);
+        unsigned int max_mineral_worker = number_of_bases()*16;
+        unsigned int new_gas_worker = std::min(max_gas_worker, ideal_gas_worker);
+        unsigned int new_mineral_worker = std::min(max_mineral_worker, ideal_mineral_worker);
+        new_gas_worker = 
+            std::min(new_gas_worker + currentState.workers_available - new_gas_worker - new_mineral_worker, max_gas_worker);
+        new_mineral_worker = 
+            std::min(new_mineral_worker + currentState.workers_available - new_gas_worker - new_mineral_worker, max_mineral_worker);
+
+        //std::cout << new_mineral_worker << " " << new_gas_worker << "\n";
         //std::cout << currentState.workers_available - new_gas_worker << " " << new_mineral_worker << "\n";
         if(new_gas_worker != currentState.gas_worker || new_mineral_worker != currentState.mineral_worker){
             currentState.gas_worker = new_gas_worker;
@@ -179,26 +204,25 @@ private:
 public:
 
 Simulator(const std::array<EntityMeta, 64>& meta_map,
-            const std::map<std::string, int>& name_map,
             const GameState initialState,
             const unsigned int gas_id,
             const unsigned int worker_id, 
             const std::vector<unsigned int>& base_ids) :
-    meta_map(meta_map), name_map(name_map), initialState(initialState), gas_id(gas_id), worker_id(worker_id), base_ids(base_ids){}
+    meta_map(meta_map), initialState(initialState), gas_id(gas_id), worker_id(worker_id), base_ids(base_ids){}
 
-json run(std::vector<std::string> lines){
+json run(std::vector<int> build_list){
     currentState = initialState;
 
     bool built = true;
     bool generate_json;
     std::vector<json> messages;
     unsigned int next_line = 0;
-    std::string line;
+    int next_entity;
 
     json output;
 
     // 1. Liste abarbeiten
-    while(next_line != lines.size() || !built) {
+    while(next_line != build_list.size() || !built) {
         //std::cout << currentState.time_tick << " " << line << "\n";
     	//Init timestep
     	if((++currentState.time_tick) > 1000){
@@ -212,24 +236,17 @@ json run(std::vector<std::string> lines){
 
     	//Check finished buildings
         std::list <std::shared_ptr<ProductionEntry>> finished_list = process_production_list();
-    	if (!finished_list.empty()) {
+    	if (!finished_list.empty()){
     		generate_json = true;
 			generate_json_build_end(events, finished_list);
     	}
 
     	//Start new buildings
-        if(built) {
-        	line = lines[next_line++];
-        }
-        auto fff = name_map.find(line);
-        if(name_map.find(line) == name_map.end()){
-            error_exit(line + " Entity not found", output);
-            return output;
-        }
+        if(built)next_entity = build_list[next_line++];
 
         std::shared_ptr<ProductionEntry> entry;
         try{
-            entry = check_and_build(fff->second);
+            entry = check_and_build(next_entity);
             built = true;
         }catch(noMineralsException& e){
             //std::cout << "no mins\n";
@@ -266,6 +283,12 @@ json run(std::vector<std::string> lines){
                 return output;
             }
             built = false;
+        }catch(noGasGeyserAllowedException& e){
+            if(currentState.production_list.empty()){
+                error_exit("Requirement not fulfilled", output);
+                return output;
+            }
+            built = false;
         }
         if(built) {
         	currentState.production_list.push_back(entry);
@@ -273,7 +296,7 @@ json run(std::vector<std::string> lines){
 			generate_json_build_start(events, entry);
         }
 
-        if(update_worker_distribution())
+        if(update_worker_distribution(build_list, next_line + (built ? 1 : 0)))
         	generate_json = true;
 
         if(generate_json){
@@ -297,9 +320,6 @@ json run(std::vector<std::string> lines){
 			generate_json = true;
 			generate_json_build_end(events, finished_list);
     	}
-
-        if(update_worker_distribution())
-        	generate_json = true;
 
         if(generate_json){
             messages.push_back(make_json_message(currentState, events));

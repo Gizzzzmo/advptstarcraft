@@ -25,8 +25,11 @@ SCV
 BarracksReactor
 SCV
 SCV
+CommandCenter
+Refinery
 OrbitalCommand
 SupplyDepot
+Refinery
 Barracks
 Bunker
 Starport
@@ -35,7 +38,6 @@ SupplyDepot
 StarportTechLab
 StarportReactor
 Starport
-CommandCenter
 SupplyDepot
 EngineeringBay
 PlanetaryFortress
