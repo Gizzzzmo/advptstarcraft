@@ -154,15 +154,16 @@ private:
 	}
 
 	inline bool update_worker_distribution() {
-        unsigned int max_gas_worker = std::min(currentState.entitymap[0]->size()*6, currentState.entitymap[gas_id]->size()*3);
+        unsigned int max_gas_worker = std::min(number_of_bases()*6, static_cast<unsigned int>(currentState.entitymap[gas_id]->size()*3));
         unsigned int new_gas_worker = std::min(max_gas_worker, currentState.workers_available/2);
-        unsigned int new_mineral_worker = currentState.workers_available - new_gas_worker;
+        unsigned int new_mineral_worker = std::min(currentState.workers_available - new_gas_worker, number_of_bases()*16);
+        //std::cout << currentState.workers_available - new_gas_worker << " " << new_mineral_worker << "\n";
         if(new_gas_worker != currentState.gas_worker || new_mineral_worker != currentState.mineral_worker){
             currentState.gas_worker = new_gas_worker;
             currentState.mineral_worker = new_mineral_worker;
             return true;
-        } else
-        	return false;
+        }
+        return false;
 	}
 
 
@@ -197,8 +198,8 @@ json run(std::vector<std::string> lines){
     json output;
 
     // 1. Liste abarbeiten
-    std::cout << "Process list\n";
     while(next_line != lines.size() || !built) {
+        //std::cout << currentState.time_tick << " " << line << "\n";
     	//Init timestep
     	if((++currentState.time_tick) > 1000){
             error_exit("Exceeded max time", output);
@@ -231,30 +232,35 @@ json run(std::vector<std::string> lines){
             entry = check_and_build(fff->second);
             built = true;
         }catch(noMineralsException& e){
+            //std::cout << "no mins\n";
             if(currentState.entitymap[worker_id]->empty() && currentState.production_list.empty()){
                 error_exit("No Minerals", output);
                 return output;
             }
             built = false;
         }catch(noGasException& e){
+            //std::cout << "no gas\n";
             if(currentState.entitymap[gas_id]->empty() && currentState.production_list.empty()){
                 error_exit("No Gas", output);
                 return output;
             }
             built = false;
         }catch(noSupplyException& e){
+            //std::cout << "no supply\n";
             if(currentState.production_list.empty()){
                 error_exit("No supply", output);
                 return output;
             }
             built = false;
         }catch(noProducerAvailableException& e){
+            //std::cout << "no prod\n";
             if(currentState.production_list.empty()){
                 error_exit("No Producer Available", output);
                 return output;
             }
             built = false;
         }catch(requirementNotFulfilledException& e){
+            //std::cout << "missing req\n";
             if(currentState.production_list.empty()){
                 error_exit("Requirement not fulfilled", output);
                 return output;
