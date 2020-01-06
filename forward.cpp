@@ -81,7 +81,7 @@ int main(int argc, char** argv){
         }
     }
 
-    const GameState initialState{1, 5000, 0, supply, 12, 12, 12, 0, entitymap, {}, {}};
+    const GameState initialState{0, 5000, 0, supply, 12, 12, 12, 0, entitymap, {}, {}};
 
     std::vector<std::string> lines;
     json initial_units;
