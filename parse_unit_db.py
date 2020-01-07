@@ -3,8 +3,8 @@
 from sys import argv
 
 line_string = """
-build_map["{name}"] = makeEntity<{race}, {class_id}, {mins}, {gas}, {supply_delta}, {provided_supply_delta}, {max_energy}, {start_energy}, {ablty_cost}, 0x{producer_id:0>16X}, {destiny}, 0x{requirements:0>16X}, {maximum_occupation}, {build_time}, {is_worker}, {produces_larva}, {units_produced}>;
-name_map[{class_id}] = "{name}";
+meta_map[{class_id}] = {{{mins}, {gas}, {build_time}, {supply_delta}, {provided_supply_delta}, {max_energy}, {start_energy}, {ablty_cost}, 0x{producer_id:0>16X}, {destiny}, 0x{requirements:0>16X}, {maximum_occupation}, {is_worker}, {produces_larva}, {units_produced}, "{name}"}};
+name_map["{name}"] = {class_id};
 """
 
 def make_bitmap(dict_of_entities, entity_names):
@@ -25,12 +25,11 @@ prot_c = 0
 terr  = {}
 terr_c = 0
 
-for line in db:
+for i, line in enumerate(db):
 
     line = line.split('#')[0].rstrip()
-    if line == '':
+    if line == '' or i == 0:
         continue
-
     values = line.split(",")
     e = {}
 

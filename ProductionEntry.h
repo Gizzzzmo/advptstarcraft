@@ -1,14 +1,12 @@
 #pragma once
 #include "Entity.h"
+#include <memory>
 
 class ProductionEntry{
 public:
-    AbstractEntity* producee;
-    AbstractEntity* producer;
+    std::shared_ptr<Entity> producee;
+    std::shared_ptr<Entity> producer;
     unsigned int time_done;
-    ProductionEntry(AbstractEntity* producee, AbstractEntity* producer, unsigned int time_done) :
-    producee(producee), producer(producer), time_done(time_done){}
-    void addTime(unsigned int time){
-        time_done += time;
-    }
+    ProductionEntry(std::shared_ptr<Entity> producee, std::shared_ptr<Entity> producer, GameState& state) :
+    producee(producee), producer(producer), time_done(state.time_tick + producee->build_time()){}
 };

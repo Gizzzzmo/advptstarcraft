@@ -1,111 +1,111 @@
 
-build_map["Hatchery"] = makeEntity<Race::Zerg, 0, 30000, 0, -1, 6, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000000000, 1, 100, 0, 1, 1>;
-name_map[0] = "Hatchery";
+meta_map[0] = {30000, 0, 100, -1, 6, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000000000, 1, 0, 1, 1, "Hatchery"};
+name_map["Hatchery"] = 0;
 
-build_map["Queen"] = makeEntity<Race::Zerg, 1, 15000, 0, 2, 0, 200, 25, 25, 0x0000000000020009, Destiny::occupied, 0x0000000000000010, 1, 50, 0, 0, 1>;
-name_map[1] = "Queen";
+meta_map[1] = {15000, 0, 50, 2, 0, 200, 25, 25, 0x0000000000020009, Destiny::occupied, 0x0000000000000010, 1, 0, 0, 1, "Queen"};
+name_map["Queen"] = 1;
 
-build_map["EvolutionChamber"] = makeEntity<Race::Zerg, 2, 7500, 0, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000020009, 1, 35, 0, 0, 1>;
-name_map[2] = "EvolutionChamber";
+meta_map[2] = {7500, 0, 35, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000020009, 1, 0, 0, 1, "EvolutionChamber"};
+name_map["EvolutionChamber"] = 2;
 
-build_map["Lair"] = makeEntity<Race::Zerg, 3, 15000, 10000, 0, 0, 0, 0, 0, 0x0000000000000001, Destiny::consumed_at_end, 0x0000000000000010, 1, 80, 0, 1, 1>;
-name_map[3] = "Lair";
+meta_map[3] = {15000, 10000, 80, 0, 0, 0, 0, 0, 0x0000000000000001, Destiny::consumed_at_end, 0x0000000000000010, 1, 0, 1, 1, "Lair"};
+name_map["Lair"] = 3;
 
-build_map["SpawningPool"] = makeEntity<Race::Zerg, 4, 20000, 0, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000020009, 1, 65, 0, 0, 1>;
-name_map[4] = "SpawningPool";
+meta_map[4] = {20000, 0, 65, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000020009, 1, 0, 0, 1, "SpawningPool"};
+name_map["SpawningPool"] = 4;
 
-build_map["Zergling"] = makeEntity<Race::Zerg, 5, 5000, 0, 1, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000010, 1, 24, 0, 0, 2>;
-name_map[5] = "Zergling";
+meta_map[5] = {5000, 0, 24, 1, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000010, 1, 0, 0, 2, "Zergling"};
+name_map["Zergling"] = 5;
 
-build_map["InfestationPit"] = makeEntity<Race::Zerg, 6, 10000, 10000, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000020008, 1, 50, 0, 0, 1>;
-name_map[6] = "InfestationPit";
+meta_map[6] = {10000, 10000, 50, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000020008, 1, 0, 0, 1, "InfestationPit"};
+name_map["InfestationPit"] = 6;
 
-build_map["OverlordTransport"] = makeEntity<Race::Zerg, 7, 2500, 2500, 0, 0, 0, 0, 0, 0x0000000000010000, Destiny::consumed_at_start, 0x0000000000020008, 1, 17, 0, 0, 1>;
-name_map[7] = "OverlordTransport";
+meta_map[7] = {2500, 2500, 17, 0, 0, 0, 0, 0, 0x0000000000010000, Destiny::consumed_at_start, 0x0000000000020008, 1, 0, 0, 1, "OverlordTransport"};
+name_map["OverlordTransport"] = 7;
 
-build_map["Overseer"] = makeEntity<Race::Zerg, 8, 5000, 5000, 0, 0, 200, 50, 0, 0x0000000000010000, Destiny::consumed_at_start, 0x0000000000020008, 1, 17, 0, 0, 1>;
-name_map[8] = "Overseer";
+meta_map[8] = {5000, 5000, 17, 0, 0, 200, 50, 0, 0x0000000000010000, Destiny::consumed_at_start, 0x0000000000020008, 1, 0, 0, 1, "Overseer"};
+name_map["Overseer"] = 8;
 
-build_map["Drone"] = makeEntity<Race::Zerg, 9, 5000, 0, 1, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000000, 1, 17, 1, 0, 1>;
-name_map[9] = "Drone";
+meta_map[9] = {5000, 0, 17, 1, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000000, 1, 1, 0, 1, "Drone"};
+name_map["Drone"] = 9;
 
-build_map["BanelingNest"] = makeEntity<Race::Zerg, 10, 10000, 5000, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000000010, 1, 60, 0, 0, 1>;
-name_map[10] = "BanelingNest";
+meta_map[10] = {10000, 5000, 60, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000000010, 1, 0, 0, 1, "BanelingNest"};
+name_map["BanelingNest"] = 10;
 
-build_map["HydraliskDen"] = makeEntity<Race::Zerg, 11, 10000, 10000, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000020008, 1, 40, 0, 0, 1>;
-name_map[11] = "HydraliskDen";
+meta_map[11] = {10000, 10000, 40, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000020008, 1, 0, 0, 1, "HydraliskDen"};
+name_map["HydraliskDen"] = 11;
 
-build_map["RoachWarren"] = makeEntity<Race::Zerg, 12, 15000, 0, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000000010, 1, 55, 0, 0, 1>;
-name_map[12] = "RoachWarren";
+meta_map[12] = {15000, 0, 55, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000000010, 1, 0, 0, 1, "RoachWarren"};
+name_map["RoachWarren"] = 12;
 
-build_map["Spire"] = makeEntity<Race::Zerg, 13, 20000, 20000, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000020008, 1, 100, 0, 0, 1>;
-name_map[13] = "Spire";
+meta_map[13] = {20000, 20000, 100, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000020008, 1, 0, 0, 1, "Spire"};
+name_map["Spire"] = 13;
 
-build_map["SpineCrawler"] = makeEntity<Race::Zerg, 14, 10000, 0, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000000010, 1, 50, 0, 0, 1>;
-name_map[14] = "SpineCrawler";
+meta_map[14] = {10000, 0, 50, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000000010, 1, 0, 0, 1, "SpineCrawler"};
+name_map["SpineCrawler"] = 14;
 
-build_map["Baneling"] = makeEntity<Race::Zerg, 15, 2500, 2500, -1, 0, 0, 0, 0, 0x0000000000000020, Destiny::consumed_at_start, 0x0000000000000400, 1, 20, 0, 0, 1>;
-name_map[15] = "Baneling";
+meta_map[15] = {2500, 2500, 20, -1, 0, 0, 0, 0, 0x0000000000000020, Destiny::consumed_at_start, 0x0000000000000400, 1, 0, 0, 1, "Baneling"};
+name_map["Baneling"] = 15;
 
-build_map["Overlord"] = makeEntity<Race::Zerg, 16, 10000, 0, 0, 8, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000000, 1, 25, 0, 0, 1>;
-name_map[16] = "Overlord";
+meta_map[16] = {10000, 0, 25, 0, 8, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000000, 1, 0, 0, 1, "Overlord"};
+name_map["Overlord"] = 16;
 
-build_map["Hive"] = makeEntity<Race::Zerg, 17, 20000, 15000, 0, 0, 0, 0, 0, 0x0000000000000008, Destiny::consumed_at_end, 0x0000000000000040, 1, 100, 0, 1, 1>;
-name_map[17] = "Hive";
+meta_map[17] = {20000, 15000, 100, 0, 0, 0, 0, 0, 0x0000000000000008, Destiny::consumed_at_end, 0x0000000000000040, 1, 0, 1, 1, "Hive"};
+name_map["Hive"] = 17;
 
-build_map["SwarmHostMP"] = makeEntity<Race::Zerg, 18, 10000, 7500, 3, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000040, 1, 40, 0, 0, 1>;
-name_map[18] = "SwarmHostMP";
+meta_map[18] = {10000, 7500, 40, 3, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000040, 1, 0, 0, 1, "SwarmHostMP"};
+name_map["SwarmHostMP"] = 18;
 
-build_map["Viper"] = makeEntity<Race::Zerg, 19, 10000, 20000, 3, 0, 200, 50, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000020000, 1, 40, 0, 0, 1>;
-name_map[19] = "Viper";
+meta_map[19] = {10000, 20000, 40, 3, 0, 200, 50, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000020000, 1, 0, 0, 1, "Viper"};
+name_map["Viper"] = 19;
 
-build_map["Extractor"] = makeEntity<Race::Zerg, 20, 2500, 0, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000000000, 1, 30, 0, 0, 1>;
-name_map[20] = "Extractor";
+meta_map[20] = {2500, 0, 30, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000000000, 1, 0, 0, 1, "Extractor"};
+name_map["Extractor"] = 20;
 
-build_map["GreaterSpire"] = makeEntity<Race::Zerg, 21, 10000, 15000, 0, 0, 0, 0, 0, 0x0000000000002000, Destiny::consumed_at_end, 0x0000000000020000, 1, 100, 0, 0, 1>;
-name_map[21] = "GreaterSpire";
+meta_map[21] = {10000, 15000, 100, 0, 0, 0, 0, 0, 0x0000000000002000, Destiny::consumed_at_end, 0x0000000000020000, 1, 0, 0, 1, "GreaterSpire"};
+name_map["GreaterSpire"] = 21;
 
-build_map["Hydralisk"] = makeEntity<Race::Zerg, 22, 10000, 5000, 2, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000800, 1, 33, 0, 0, 1>;
-name_map[22] = "Hydralisk";
+meta_map[22] = {10000, 5000, 33, 2, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000800, 1, 0, 0, 1, "Hydralisk"};
+name_map["Hydralisk"] = 22;
 
-build_map["Infestor"] = makeEntity<Race::Zerg, 23, 10000, 15000, 2, 0, 200, 50, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000040, 1, 50, 0, 0, 1>;
-name_map[23] = "Infestor";
+meta_map[23] = {10000, 15000, 50, 2, 0, 200, 50, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000040, 1, 0, 0, 1, "Infestor"};
+name_map["Infestor"] = 23;
 
-build_map["Mutalisk"] = makeEntity<Race::Zerg, 24, 10000, 10000, 2, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000202000, 1, 33, 0, 0, 1>;
-name_map[24] = "Mutalisk";
+meta_map[24] = {10000, 10000, 33, 2, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000202000, 1, 0, 0, 1, "Mutalisk"};
+name_map["Mutalisk"] = 24;
 
-build_map["Roach"] = makeEntity<Race::Zerg, 25, 7500, 2500, 2, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000001000, 1, 27, 0, 0, 1>;
-name_map[25] = "Roach";
+meta_map[25] = {7500, 2500, 27, 2, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000001000, 1, 0, 0, 1, "Roach"};
+name_map["Roach"] = 25;
 
-build_map["SporeCrawler"] = makeEntity<Race::Zerg, 26, 7500, 0, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000000010, 1, 30, 0, 0, 1>;
-name_map[26] = "SporeCrawler";
+meta_map[26] = {7500, 0, 30, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000000010, 1, 0, 0, 1, "SporeCrawler"};
+name_map["SporeCrawler"] = 26;
 
-build_map["UltraliskCavern"] = makeEntity<Race::Zerg, 27, 15000, 20000, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000020000, 1, 65, 0, 0, 1>;
-name_map[27] = "UltraliskCavern";
+meta_map[27] = {15000, 20000, 65, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000020000, 1, 0, 0, 1, "UltraliskCavern"};
+name_map["UltraliskCavern"] = 27;
 
-build_map["Larva"] = makeEntity<Race::Zerg, 28, 0, 0, 0, 0, 0, 0, 0, 0x0000000000000000, Destiny::occupied, 0x0000000000000000, 1, 0, 0, 0, 1>;
-name_map[28] = "Larva";
+meta_map[28] = {0, 0, 0, 0, 0, 0, 0, 0, 0x0000000000000000, Destiny::occupied, 0x0000000000000000, 1, 0, 0, 1, "Larva"};
+name_map["Larva"] = 28;
 
-build_map["NydusNetwork"] = makeEntity<Race::Zerg, 29, 15000, 15000, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000020008, 1, 50, 0, 0, 1>;
-name_map[29] = "NydusNetwork";
+meta_map[29] = {15000, 15000, 50, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000020008, 1, 0, 0, 1, "NydusNetwork"};
+name_map["NydusNetwork"] = 29;
 
-build_map["Ravager"] = makeEntity<Race::Zerg, 30, 2500, 7500, 1, 0, 0, 0, 0, 0x0000000002000000, Destiny::consumed_at_start, 0x0000000000001000, 1, 12, 0, 0, 1>;
-name_map[30] = "Ravager";
+meta_map[30] = {2500, 7500, 12, 1, 0, 0, 0, 0, 0x0000000002000000, Destiny::consumed_at_start, 0x0000000000001000, 1, 0, 0, 1, "Ravager"};
+name_map["Ravager"] = 30;
 
-build_map["LurkerMP"] = makeEntity<Race::Zerg, 31, 5000, 10000, 1, 0, 0, 0, 0, 0x0000000000400000, Destiny::consumed_at_start, 0x0000000200000000, 1, 25, 0, 0, 1>;
-name_map[31] = "LurkerMP";
+meta_map[31] = {5000, 10000, 25, 1, 0, 0, 0, 0, 0x0000000000400000, Destiny::consumed_at_start, 0x0000000200000000, 1, 0, 0, 1, "LurkerMP"};
+name_map["LurkerMP"] = 31;
 
-build_map["NydusCanal"] = makeEntity<Race::Zerg, 32, 5000, 5000, 0, 0, 0, 0, 0, 0x0000000020000000, Destiny::occupied, 0x0000000020000000, 1, 20, 0, 0, 1>;
-name_map[32] = "NydusCanal";
+meta_map[32] = {5000, 5000, 20, 0, 0, 0, 0, 0, 0x0000000020000000, Destiny::occupied, 0x0000000020000000, 1, 0, 0, 1, "NydusCanal"};
+name_map["NydusCanal"] = 32;
 
-build_map["LurkerDenMP"] = makeEntity<Race::Zerg, 33, 10000, 15000, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000000800, 1, 120, 0, 0, 1>;
-name_map[33] = "LurkerDenMP";
+meta_map[33] = {10000, 15000, 120, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000000800, 1, 0, 0, 1, "LurkerDenMP"};
+name_map["LurkerDenMP"] = 33;
 
-build_map["Corruptor"] = makeEntity<Race::Zerg, 34, 15000, 10000, 2, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000202000, 1, 40, 0, 0, 1>;
-name_map[34] = "Corruptor";
+meta_map[34] = {15000, 10000, 40, 2, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000202000, 1, 0, 0, 1, "Corruptor"};
+name_map["Corruptor"] = 34;
 
-build_map["Ultralisk"] = makeEntity<Race::Zerg, 35, 30000, 20000, 6, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000008000000, 1, 55, 0, 0, 1>;
-name_map[35] = "Ultralisk";
+meta_map[35] = {30000, 20000, 55, 6, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000008000000, 1, 0, 0, 1, "Ultralisk"};
+name_map["Ultralisk"] = 35;
 
-build_map["BroodLord"] = makeEntity<Race::Zerg, 36, 15000, 15000, 2, 0, 0, 0, 0, 0x0000000400000000, Destiny::consumed_at_start, 0x0000000000200000, 1, 34, 0, 0, 1>;
-name_map[36] = "BroodLord";
+meta_map[36] = {15000, 15000, 34, 2, 0, 0, 0, 0, 0x0000000400000000, Destiny::consumed_at_start, 0x0000000000200000, 1, 0, 0, 1, "BroodLord"};
+name_map["BroodLord"] = 36;
