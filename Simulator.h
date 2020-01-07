@@ -32,6 +32,7 @@ private:
     const std::map<std::string, int>& name_map;
     const GameState& initialState;
     const std::vector<unsigned int> base_ids;
+    const int super_id;
     GameState currentState;
 
 
@@ -176,6 +177,12 @@ private:
         //std::cout << "total number of bases: " << sum << "\n";
         return sum;
     }
+
+    void update_energy(){
+        for(std::shared_ptr<Entity> special_unit : *currentState.entitymap[super_id]){
+            special_unit->updateEnergy();
+        }
+    }
 public:
 
 Simulator(const std::array<EntityMeta, 64>& meta_map,
@@ -183,8 +190,9 @@ Simulator(const std::array<EntityMeta, 64>& meta_map,
             const GameState initialState,
             const unsigned int gas_id,
             const unsigned int worker_id, 
-            const std::vector<unsigned int>& base_ids) :
-    meta_map(meta_map), name_map(name_map), initialState(initialState), gas_id(gas_id), worker_id(worker_id), base_ids(base_ids){}
+            const std::vector<unsigned int>& base_ids,
+            const int super_id) :
+    meta_map(meta_map), name_map(name_map), initialState(initialState), gas_id(gas_id), worker_id(worker_id), base_ids(base_ids), super_id(super_id){}
 
 json run(std::vector<std::string> lines){
     currentState = initialState;
@@ -209,6 +217,8 @@ json run(std::vector<std::string> lines){
         std::vector<json> events;
 
     	update_resources();
+
+        update_energy();
 
     	//Check finished buildings
         std::list <std::shared_ptr<ProductionEntry>> finished_list = process_production_list();
@@ -271,6 +281,21 @@ json run(std::vector<std::string> lines){
         	currentState.production_list.push_back(entry);
 			generate_json = true;
 			generate_json_build_start(events, entry);
+        }
+        else{
+            for(std::shared_ptr<Entity> specialunit : *currentState.entitymap[super_id]){
+                if(specialunit->cast_if_possible()){
+                    switch(currentState.gamerace){
+                        case Terran:
+                        break;
+                        case Zerg:
+                        break;
+                        case Protoss:
+                        break;
+                    }
+                    break;
+                }
+            }
         }
 
         if(update_worker_distribution())

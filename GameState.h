@@ -7,6 +7,8 @@
 class ProductionEntry;
 class Entity;
 
+enum Race{Terran, Zerg, Protoss};
+
 typedef struct GameState{
     unsigned int time_tick;
     unsigned int minerals;
@@ -19,4 +21,5 @@ typedef struct GameState{
     std::array<std::shared_ptr<std::list<std::shared_ptr<Entity>>>, 64> entitymap;
     std::list<std::shared_ptr<ProductionEntry>> production_list;
     std::list<std::pair<std::shared_ptr<Entity>, unsigned int>> special_entities; //Contains upgraded main building (Terran) or list of queens (Zerg) and corresponding special energy
+    Race gamerace;
 } GameState;

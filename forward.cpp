@@ -9,7 +9,6 @@ using json = nlohmann::json;
 #include <memory>
 //https://thispointer.com/learning-shared_ptr-part-1-usage-details/
 
-enum Race{Terran, Zerg, Protoss};
 
 int main(int argc, char** argv){
     std::string racearg(argv[1]);
@@ -17,6 +16,7 @@ int main(int argc, char** argv){
     
     int worker_id;
     int gas_id;
+    int super_id;
     unsigned int supply = 15;
 
     std::map<std::string, int> name_map;
@@ -39,6 +39,7 @@ int main(int argc, char** argv){
             worker_id = 4;
             gas_id = 25;
             base_ids = {0, 1, 2};
+            super_id = 1;
             for(int i = 0;i < 12;i++){
             	std::shared_ptr<Entity> a(new Entity(meta_map, 4));
                 entitymap[4]->push_back(a);
@@ -53,6 +54,7 @@ int main(int argc, char** argv){
             worker_id = 9;
             gas_id = 20;
             base_ids = {0, 3, 17};
+            super_id = 1;
             for(int i = 0;i < 12;i++){
             	std::shared_ptr<Entity> a(new Entity(meta_map, 9));
                 entitymap[9]->push_back(a);
@@ -70,6 +72,7 @@ int main(int argc, char** argv){
             worker_id = 5;
             gas_id = 7;
             base_ids = {0};
+            super_id = 0;
             for(int i = 0;i < 12;i++){
             	std::shared_ptr<Entity> a(new Entity( meta_map, 5));
             	entitymap[5]->push_back(a);
@@ -80,7 +83,7 @@ int main(int argc, char** argv){
         }
     }
 
-    const GameState initialState{0, 5000, 0, supply, 12, 12, 12, 0, entitymap, {}, {}};
+    const GameState initialState{0, 5000, 0, supply, 12, 12, 12, 0, entitymap, {}, {}, race};
 
     std::vector<std::string> lines;
     json initial_units;
@@ -100,7 +103,7 @@ int main(int argc, char** argv){
         if(line != "")lines.push_back(line);
         if(line == "") break;
     }
-    Simulator sim(meta_map, name_map, initialState, gas_id, worker_id, base_ids);
+    Simulator sim(meta_map, name_map, initialState, gas_id, worker_id, base_ids, super_id);
     json output = sim.run(lines);
     output["game"] = race == Race::Terran ? "Terr" : race == Race::Zerg ? "Zerg" : "Prot";
     output["initialUnits"] = initial_units;
