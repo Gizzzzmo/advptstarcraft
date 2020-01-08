@@ -59,10 +59,10 @@ int main(int argc, char** argv){
             	std::shared_ptr<Entity> a(new Entity(meta_map, 9));
                 entitymap[9]->push_back(a);
             }
-            std::shared_ptr<Entity> a(new Entity( meta_map, 0));
-            std::shared_ptr<Entity> b(new Entity( meta_map, 0));
-            entitymap[0]->push_back(a);
-            entitymap[16]->push_back(b);
+            std::shared_ptr<Entity> hatch(new Entity( meta_map, 0));
+            entitymap[0]->push_back(hatch);
+            std::shared_ptr<Entity> ovi(new Entity( meta_map, 16));
+            entitymap[16]->push_back(ovi);
             supply = 14;
             break;
         }
