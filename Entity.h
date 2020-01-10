@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <list>
 #include <array>
 #include <sstream>
 #include <memory>
@@ -32,6 +33,7 @@ private:
     unsigned int occupied;
     unsigned int obj_id;
     unsigned int energy;
+    unsigned int chrono_boosted_until;;
     int clss_id;
     std::string idd;
     const std::array<EntityMeta, 64>& metamap;
@@ -42,11 +44,13 @@ private:
     }
 
 public:
-    Entity(const std::array<EntityMeta, 64>& metamap, int class_id) :
+    std::list<std::shared_ptr<ProductionEntry>> producees;
+    Entity(const std::array<EntityMeta, 64>& metamap, int class_id, unsigned int time_tick) :
         occupied(metamap[class_id].max_occupation),
-        energy(metamap[class_id].max_occupation),
+        energy(metamap[class_id].start_energy),
         clss_id(class_id),
-        metamap(metamap)
+        metamap(metamap),
+        chrono_boosted_until(time_tick)
     {
         obj_id = getCounter()++;
         std::stringstream ss;
@@ -105,7 +109,7 @@ public:
     }
 
     inline void updateEnergy(){
-        energy += 56525;
+        energy += 56250;
         unsigned int max_nrg = max_energy();
         if(energy > max_nrg)energy = max_nrg;
     }
@@ -116,6 +120,18 @@ public:
             return true;
         }
         else return false;
+    }
+
+    inline bool is_chrono_boosted(GameState& currentState){
+        return chrono_boosted_until > currentState.time_tick;
+    }
+
+    inline int get_chrono_until(){
+        return chrono_boosted_until;
+    }
+
+    inline void chrono_boost(GameState& currentState){
+        chrono_boosted_until = currentState.time_tick + 20;
     }
 
     bool cast_if_possible(){

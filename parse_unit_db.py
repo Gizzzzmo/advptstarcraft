@@ -45,8 +45,8 @@ for i, line in enumerate(db):
     e["producer"] = values[10]
     e["dependencies"] = values[11]
     #e["produces"] = values[12]
-    e["start_energy"] = int(values[13])
-    e["max_energy"] = int(values[14])
+    e["start_energy"] = int(values[13]) * 100000
+    e["max_energy"] = int(values[14]) * 100000
     e["structure"] = bool(values[15])
     e["race"] = values[16]
     
@@ -54,19 +54,19 @@ for i, line in enumerate(db):
     if values[16] == "Zerg":
         e["produces_larva"] = 1 if values[0] in ("Hatchery", "Lair", "Hive") else 0
         e["class_id"] = zerg_c
-        e["ablty_cost"] = 25 if values[0] == "Queen" else 0
+        e["ablty_cost"] = 2500000 if values[0] == "Queen" else 0
         zerg_c +=1
         zergs[e["name"]] = e
     if values[16] == "Prot":
         e["produces_larva"] = 0
         e["class_id"] = prot_c
-        e["ablty_cost"] = 50 if values[0] == "Nexus" else 0
+        e["ablty_cost"] = 5000000 if values[0] == "Nexus" else 0
         prot_c +=1
         prot[e["name"]] = e
     if values[16] == "Terr":
         e["produces_larva"] = 0
         e["class_id"] = terr_c
-        e["ablty_cost"] = 50 if values[0] == "OrbitalCommand" else 0
+        e["ablty_cost"] = 5000000 if values[0] == "OrbitalCommand" else 0
         terr_c +=1
         terr[e["name"]] = e
 

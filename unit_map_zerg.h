@@ -2,7 +2,7 @@
 meta_map[0] = {30000, 0, 100, -1, 6, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000000000, 1, 0, 1, 1, "Hatchery"};
 name_map["Hatchery"] = 0;
 
-meta_map[1] = {15000, 0, 50, 2, 0, 200, 25, 25, 0x0000000000020009, Destiny::occupied, 0x0000000000000010, 1, 0, 0, 1, "Queen"};
+meta_map[1] = {15000, 0, 50, 2, 0, 20000000, 2500000, 2500000, 0x0000000000020009, Destiny::occupied, 0x0000000000000010, 1, 0, 0, 1, "Queen"};
 name_map["Queen"] = 1;
 
 meta_map[2] = {7500, 0, 35, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000020009, 1, 0, 0, 1, "EvolutionChamber"};
@@ -23,7 +23,7 @@ name_map["InfestationPit"] = 6;
 meta_map[7] = {2500, 2500, 17, 0, 0, 0, 0, 0, 0x0000000000010000, Destiny::consumed_at_start, 0x0000000000020008, 1, 0, 0, 1, "OverlordTransport"};
 name_map["OverlordTransport"] = 7;
 
-meta_map[8] = {5000, 5000, 17, 0, 0, 200, 50, 0, 0x0000000000010000, Destiny::consumed_at_start, 0x0000000000020008, 1, 0, 0, 1, "Overseer"};
+meta_map[8] = {5000, 5000, 17, 0, 0, 20000000, 5000000, 0, 0x0000000000010000, Destiny::consumed_at_start, 0x0000000000020008, 1, 0, 0, 1, "Overseer"};
 name_map["Overseer"] = 8;
 
 meta_map[9] = {5000, 0, 17, 1, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000000, 1, 1, 0, 1, "Drone"};
@@ -56,7 +56,7 @@ name_map["Hive"] = 17;
 meta_map[18] = {10000, 7500, 40, 3, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000040, 1, 0, 0, 1, "SwarmHostMP"};
 name_map["SwarmHostMP"] = 18;
 
-meta_map[19] = {10000, 20000, 40, 3, 0, 200, 50, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000020000, 1, 0, 0, 1, "Viper"};
+meta_map[19] = {10000, 20000, 40, 3, 0, 20000000, 5000000, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000020000, 1, 0, 0, 1, "Viper"};
 name_map["Viper"] = 19;
 
 meta_map[20] = {2500, 0, 30, -1, 0, 0, 0, 0, 0x0000000000000200, Destiny::consumed_at_start, 0x0000000000000000, 1, 0, 0, 1, "Extractor"};
@@ -68,7 +68,7 @@ name_map["GreaterSpire"] = 21;
 meta_map[22] = {10000, 5000, 33, 2, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000800, 1, 0, 0, 1, "Hydralisk"};
 name_map["Hydralisk"] = 22;
 
-meta_map[23] = {10000, 15000, 50, 2, 0, 200, 50, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000040, 1, 0, 0, 1, "Infestor"};
+meta_map[23] = {10000, 15000, 50, 2, 0, 20000000, 5000000, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000000040, 1, 0, 0, 1, "Infestor"};
 name_map["Infestor"] = 23;
 
 meta_map[24] = {10000, 10000, 33, 2, 0, 0, 0, 0, 0x0000000010000000, Destiny::consumed_at_start, 0x0000000000202000, 1, 0, 0, 1, "Mutalisk"};

@@ -1,5 +1,5 @@
 
-meta_map[0] = {40000, 0, 100, 0, 15, 200, 50, 50, 0x0000000000000020, Destiny::freed, 0x0000000000000000, 1, 0, 0, 1, "Nexus"};
+meta_map[0] = {40000, 0, 100, 0, 15, 20000000, 5000000, 5000000, 0x0000000000000020, Destiny::freed, 0x0000000000000000, 1, 0, 0, 1, "Nexus"};
 name_map["Nexus"] = 0;
 
 meta_map[1] = {15000, 0, 45, 0, 0, 0, 0, 0, 0x0000000000000020, Destiny::freed, 0x0000000000000001, 1, 0, 0, 1, "Forge"};
@@ -8,7 +8,7 @@ name_map["Forge"] = 1;
 meta_map[2] = {15000, 0, 65, 0, 0, 0, 0, 0, 0x0000000000000020, Destiny::freed, 0x0000000000000001, 1, 0, 0, 1, "Gateway"};
 name_map["Gateway"] = 2;
 
-meta_map[3] = {40000, 40000, 160, 8, 0, 200, 50, 0, 0x0000000000000001, Destiny::occupied, 0x0000000000000400, 1, 0, 0, 1, "Mothership"};
+meta_map[3] = {40000, 40000, 160, 8, 0, 20000000, 5000000, 0, 0x0000000000000001, Destiny::occupied, 0x0000000000000400, 1, 0, 0, 1, "Mothership"};
 name_map["Mothership"] = 3;
 
 meta_map[4] = {12500, 5000, 42, 2, 0, 0, 0, 0, 0x0000000000000004, Destiny::occupied, 0x0000000000000100, 1, 0, 0, 1, "Stalker"};
@@ -32,13 +32,13 @@ name_map["DarkShrine"] = 9;
 meta_map[10] = {30000, 20000, 60, 0, 0, 0, 0, 0, 0x0000000000000020, Destiny::freed, 0x0000000000400000, 1, 0, 0, 1, "FleetBeacon"};
 name_map["FleetBeacon"] = 10;
 
-meta_map[11] = {5000, 15000, 55, 2, 0, 200, 50, 0, 0x0000000000000004, Destiny::occupied, 0x0000000000010000, 1, 0, 0, 1, "HighTemplar"};
+meta_map[11] = {5000, 15000, 55, 2, 0, 20000000, 5000000, 0, 0x0000000000000004, Destiny::occupied, 0x0000000000010000, 1, 0, 0, 1, "HighTemplar"};
 name_map["HighTemplar"] = 11;
 
 meta_map[12] = {15000, 0, 40, 0, 0, 0, 0, 0, 0x0000000000000020, Destiny::freed, 0x0000000000000002, 1, 0, 0, 1, "PhotonCannon"};
 name_map["PhotonCannon"] = 12;
 
-meta_map[13] = {5000, 10000, 37, 2, 0, 200, 50, 0, 0x0000000000000004, Destiny::occupied, 0x0000000000000100, 1, 0, 0, 1, "Sentry"};
+meta_map[13] = {5000, 10000, 37, 2, 0, 20000000, 5000000, 0, 0x0000000000000004, Destiny::occupied, 0x0000000000000100, 1, 0, 0, 1, "Sentry"};
 name_map["Sentry"] = 13;
 
 meta_map[14] = {10000, 0, 25, 0, 8, 0, 0, 0, 0x0000000000000020, Destiny::freed, 0x0000000000000000, 1, 0, 0, 1, "Pylon"};
@@ -53,7 +53,7 @@ name_map["TemplarArchive"] = 16;
 meta_map[17] = {10000, 0, 38, 2, 0, 0, 0, 0, 0x0000000000000004, Destiny::occupied, 0x0000000000000000, 1, 0, 0, 1, "Zealot"};
 name_map["Zealot"] = 17;
 
-meta_map[18] = {10000, 0, 40, 0, 0, 100, 100, 0, 0x0000000000000020, Destiny::freed, 0x0000000000000100, 1, 0, 0, 1, "ShieldBattery"};
+meta_map[18] = {10000, 0, 40, 0, 0, 10000000, 10000000, 0, 0x0000000000000020, Destiny::freed, 0x0000000000000100, 1, 0, 0, 1, "ShieldBattery"};
 name_map["ShieldBattery"] = 18;
 
 meta_map[19] = {35000, 25000, 90, 6, 0, 0, 0, 0, 0x0000000000400000, Destiny::occupied, 0x0000000000000400, 1, 0, 0, 1, "Carrier"};
@@ -83,7 +83,7 @@ name_map["Tempest"] = 26;
 meta_map[27] = {15000, 15000, 50, 3, 0, 0, 0, 0, 0x0000000000008000, Destiny::occupied, 0x0000000000800000, 1, 0, 0, 1, "Disruptor"};
 name_map["Disruptor"] = 27;
 
-meta_map[28] = {15000, 15000, 52, 3, 0, 200, 50, 0, 0x0000000000400000, Destiny::occupied, 0x0000000000000000, 1, 0, 0, 1, "Oracle"};
+meta_map[28] = {15000, 15000, 52, 3, 0, 20000000, 5000000, 0, 0x0000000000400000, Destiny::occupied, 0x0000000000000000, 1, 0, 0, 1, "Oracle"};
 name_map["Oracle"] = 28;
 
 meta_map[29] = {27500, 10000, 55, 4, 0, 0, 0, 0, 0x0000000000008000, Destiny::occupied, 0x0000000000000000, 1, 0, 0, 1, "Immortal"};
@@ -95,5 +95,5 @@ name_map["Observer"] = 30;
 meta_map[31] = {25000, 15000, 60, 4, 0, 0, 0, 0, 0x0000000000400000, Destiny::occupied, 0x0000000000000000, 1, 0, 0, 1, "VoidRay"};
 name_map["VoidRay"] = 31;
 
-meta_map[32] = {15000, 10000, 35, 2, 0, 200, 50, 0, 0x0000000000400000, Destiny::occupied, 0x0000000000000000, 1, 0, 0, 1, "Phoenix"};
+meta_map[32] = {15000, 10000, 35, 2, 0, 20000000, 5000000, 0, 0x0000000000400000, Destiny::occupied, 0x0000000000000000, 1, 0, 0, 1, "Phoenix"};
 name_map["Phoenix"] = 32;

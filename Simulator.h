@@ -42,7 +42,7 @@ private:
             std::shared_ptr<ProductionEntry> entry = *it;
             auto prev = it;
             ++it;
-            if(entry->time_done == currentState.time_tick) {
+            if((entry->time_done + 5)/6 == currentState.time_tick) {
                 //TODO: Add to enity list
                 if(entry->producee->is_worker())currentState.workers_available++;
                 currentState.entitymap[(entry->producee)->class_id()]->push_back(entry->producee);
@@ -66,6 +66,12 @@ private:
                     	break;
                 }
                 currentState.production_list.erase(prev);
+                for(auto it = entry->producer->producees.begin(); it != entry->producer->producees.end();++it){
+                    if(*it == entry){
+                        entry->producer->producees.erase(it);
+                    }
+                    break;
+                }
                 currentState.supply += entry->producee->supply_provided();
                 result.push_back(entry);
             }
@@ -107,8 +113,10 @@ private:
                     currentState.minerals -= meta_map[class_id].minerals;
                     currentState.gas -= meta_map[class_id].gas;
                     currentState.supply_used += meta_map[class_id].supply;
-                    std::shared_ptr<Entity> producee(new Entity(meta_map, class_id));
+                    std::shared_ptr<Entity> producee(new Entity(meta_map, class_id, currentState.time_tick));
                     std::shared_ptr<ProductionEntry> e(new ProductionEntry(producee, producer, currentState));
+                    if(producer->is_chrono_boosted(currentState))e->chrono_boost(currentState, producer->get_chrono_until());
+                    producer->producees.push_back(e);
                     return e;
                 }
             }
@@ -217,8 +225,8 @@ json run(std::vector<std::string> lines){
         std::vector<json> events;
 
     	update_resources();
-
         update_energy();
+
 
     	//Check finished buildings
         std::list <std::shared_ptr<ProductionEntry>> finished_list = process_production_list();
@@ -285,12 +293,24 @@ json run(std::vector<std::string> lines){
         else{
             for(std::shared_ptr<Entity> specialunit : *currentState.entitymap[super_id]){
                 if(specialunit->cast_if_possible()){
+                    generate_json = true;
                     switch(currentState.gamerace){
                         case Terran:
                         break;
                         case Zerg:
                         break;
                         case Protoss:
+                            std::shared_ptr<Entity> target = currentState.entitymap[0]->front();
+                            target->chrono_boost(currentState);
+                            for(std::shared_ptr<ProductionEntry> entry : target->producees){
+                                entry->chrono_boost(currentState, target->get_chrono_until());
+                            }
+                            json specialevent;
+                            specialevent["type"] = "special";
+                            specialevent["name"] = "chronoboost";
+                            specialevent["triggeredBy"] = specialunit->id();
+                            specialevent["targetBuilding"] = currentState.entitymap[0]->front()->id();
+                            events.push_back(specialevent);
                         break;
                     }
                     break;

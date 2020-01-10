@@ -41,10 +41,10 @@ int main(int argc, char** argv){
             base_ids = {0, 1, 2};
             super_id = 1;
             for(int i = 0;i < 12;i++){
-            	std::shared_ptr<Entity> a(new Entity(meta_map, 4));
+            	std::shared_ptr<Entity> a(new Entity(meta_map, 4, 0));
                 entitymap[4]->push_back(a);
             }
-            std::shared_ptr<Entity> a(new Entity(meta_map, 0));
+            std::shared_ptr<Entity> a(new Entity(meta_map, 0, 0));
             entitymap[0]->push_back(a);
             break;
         }
@@ -56,11 +56,11 @@ int main(int argc, char** argv){
             base_ids = {0, 3, 17};
             super_id = 1;
             for(int i = 0;i < 12;i++){
-            	std::shared_ptr<Entity> a(new Entity(meta_map, 9));
+            	std::shared_ptr<Entity> a(new Entity(meta_map, 9, 0));
                 entitymap[9]->push_back(a);
             }
-            std::shared_ptr<Entity> a(new Entity( meta_map, 0));
-            std::shared_ptr<Entity> b(new Entity( meta_map, 0));
+            std::shared_ptr<Entity> a(new Entity( meta_map, 0, 0));
+            std::shared_ptr<Entity> b(new Entity( meta_map, 0, 0));
             entitymap[0]->push_back(a);
             entitymap[16]->push_back(b);
             supply = 14;
@@ -74,10 +74,10 @@ int main(int argc, char** argv){
             base_ids = {0};
             super_id = 0;
             for(int i = 0;i < 12;i++){
-            	std::shared_ptr<Entity> a(new Entity( meta_map, 5));
+            	std::shared_ptr<Entity> a(new Entity(meta_map, 5, 0));
             	entitymap[5]->push_back(a);
             }
-            std::shared_ptr<Entity> a(new Entity( meta_map, 0));
+            std::shared_ptr<Entity> a(new Entity(meta_map, 0, 0));
             entitymap[0]->push_back(a);
             break;
         }
