@@ -22,4 +22,7 @@ typedef struct GameState{
     std::list<std::shared_ptr<ProductionEntry>> production_list;
     std::list<std::pair<std::shared_ptr<Entity>, unsigned int>> special_entities; //Contains upgraded main building (Terran) or list of queens (Zerg) and corresponding special energy
     Race gamerace;
+
+    //Terran:
+    int timeout_mule;
 } GameState;

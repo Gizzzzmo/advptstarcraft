@@ -35,7 +35,6 @@ private:
     const int super_id;
     GameState currentState;
 
-
     inline std::list<std::shared_ptr<ProductionEntry>> process_production_list(){
         std::list<std::shared_ptr<ProductionEntry>> result;
         for(std::list<std::shared_ptr<ProductionEntry>>::iterator it = currentState.production_list.begin(); it != currentState.production_list.end();) {
@@ -67,6 +66,9 @@ private:
                 }
                 currentState.production_list.erase(prev);
                 currentState.supply += entry->producee->supply_provided();
+                if(entry->producee->class_id() == super_id) {
+                	entry->producee->set_start_energy();
+                }
                 result.push_back(entry);
             }
         }
@@ -76,6 +78,12 @@ private:
     void update_resources(){
         currentState.minerals += 70*currentState.mineral_worker;
         currentState.gas += 63*currentState.gas_worker;
+        if(currentState.gamerace == Terran) {
+        	if(currentState.timeout_mule >= currentState.time_tick)
+        		/* MULEs require no other resources or supply and do not conflict
+        		 * with harvesting SCVs, but provide the yield of 3.8 SCVs. */
+        		currentState.minerals += 38; //TODO: Unit?
+        }
     }
 
     void error_exit(std::string message, json& output) {
@@ -133,7 +141,6 @@ private:
         return message;
     }
 
-
 	inline void generate_json_build_end(std::vector<json> &events, std::list <std::shared_ptr<ProductionEntry>> &finished_list) {
 		for(std::shared_ptr<ProductionEntry> entry : finished_list){
 			json event;
@@ -145,7 +152,6 @@ private:
 		}
 	}
 
-
 	inline void generate_json_build_start(std::vector<json> &events, const std::shared_ptr<ProductionEntry> &entry) {
         json build_start_event;
         build_start_event["type"] = "build-start";
@@ -153,6 +159,15 @@ private:
         build_start_event["producerID"] = entry->producer->id();
         events.push_back(build_start_event);
 	}
+
+	inline void generate_json_super(std::vector<json> &events) {
+		json build_super_event;
+		build_super_event["type"] = "special";
+		build_super_event["name"] = "mule";
+		build_super_event["triggeredBy"] = meta_map[super_id].name;
+		events.push_back(build_super_event);
+	}
+
 
 	inline bool update_worker_distribution() {
         unsigned int max_gas_worker = std::min(number_of_bases()*6, static_cast<unsigned int>(currentState.entitymap[gas_id]->size()*3));
@@ -166,7 +181,6 @@ private:
         }
         return false;
 	}
-
 
     unsigned int number_of_bases(){
         unsigned int sum = 0;
@@ -183,6 +197,7 @@ private:
             special_unit->updateEnergy();
         }
     }
+
 public:
 
 Simulator(const std::array<EntityMeta, 64>& meta_map,
@@ -195,6 +210,9 @@ Simulator(const std::array<EntityMeta, 64>& meta_map,
     meta_map(meta_map), name_map(name_map), initialState(initialState), gas_id(gas_id), worker_id(worker_id), base_ids(base_ids), super_id(super_id){}
 
 json run(std::vector<std::string> lines){
+	bool debug = false;
+	if(debug)
+		std::cout << "Init Simulator";
     currentState = initialState;
 
     bool built = true;
@@ -206,8 +224,11 @@ json run(std::vector<std::string> lines){
     json output;
 
     // 1. Liste abarbeiten
+    if(debug)
+    	std::cout << "Finished Initalization. Continue with simulation";
     while(next_line != lines.size() || !built) {
-        //std::cout << currentState.time_tick << " " << line << "\n";
+    	if(debug)
+    		std::cout << currentState.time_tick << " " << line << "\n";
     	//Init timestep
     	if((++currentState.time_tick) > 1000){
             error_exit("Exceeded max time", output);
@@ -287,6 +308,11 @@ json run(std::vector<std::string> lines){
                 if(specialunit->cast_if_possible()){
                     switch(currentState.gamerace){
                         case Terran:
+                        	std::cout << "Energy: " << specialunit->get_energy() << "\n";
+                        	std::cout << "Ability cost: " << specialunit->ability_cost() << "\n";
+                        	currentState.timeout_mule = currentState.time_tick + 64;
+                        	generate_json = true;
+                        	generate_json_super(events);
                         break;
                         case Zerg:
                         break;

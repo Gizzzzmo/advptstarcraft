@@ -54,6 +54,9 @@ public:
         ss >> idd;
 
     }
+    inline void set_start_energy() {
+    	energy = 5000000;
+    }
 
     inline int class_id() const{
         return clss_id;
@@ -86,13 +89,13 @@ public:
         return metamap[class_id()].is_worker;
     }
     inline unsigned int max_energy() const{
-        return metamap[class_id()].max_energy;
+        return metamap[class_id()].max_energy*100000;
     }
     inline unsigned int start_energy() const{
         return metamap[class_id()].start_energy;
     }
     inline unsigned int ability_cost() const{
-        return metamap[class_id()].ability_cost;
+        return metamap[class_id()].ability_cost*100000;
     }
     inline unsigned int build_time() const{
         return metamap[class_id()].build_time;
@@ -110,6 +113,9 @@ public:
         if(energy > max_nrg)energy = max_nrg;
     }
 
+    inline int get_energy(){
+    	return energy;
+    }
     inline bool check_and_occupy(){
         if(occupied){
             --occupied;
