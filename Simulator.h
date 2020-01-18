@@ -18,7 +18,7 @@ using json = nlohmann::json;
 inline std::vector<int> mask_to_vector(unsigned long mask) {
     std::vector<int> v;
     for(size_t i = 0;i < 64;++i){
-        if(mask%2 == 1)v.push_back(i);
+        if(mask%2 == 1) v.push_back(i);
         mask = mask>>1;
     }
     return v;
@@ -76,14 +76,21 @@ private:
     }
 
     void update_resources(){
-        currentState.minerals += 70*currentState.mineral_worker;
+    	unsigned int current_mineral_workers = 10*currentState.mineral_worker;
+    	if(currentState.gamerace == Terran) {
+    		if(!currentState.timeout_mule.empty()) {
+    			for (int timeout : currentState.timeout_mule) {
+    				if(timeout >= currentState.time_tick)
+					/* MULEs require no other resources or supply and do not conflict
+					 * with harvesting SCVs, but provide the yield of 3.8 SCVs. */
+						current_mineral_workers += 38; //TODO: Unit?
+					//else
+						//currentState.timeout_mule.remove(timeout); //Segmentation fault
+				}
+    		}
+    	}
+        currentState.minerals += 7*current_mineral_workers;
         currentState.gas += 63*currentState.gas_worker;
-        if(currentState.gamerace == Terran) {
-        	if(currentState.timeout_mule >= currentState.time_tick)
-        		/* MULEs require no other resources or supply and do not conflict
-        		 * with harvesting SCVs, but provide the yield of 3.8 SCVs. */
-        		currentState.minerals += 38; //TODO: Unit?
-        }
     }
 
     void error_exit(std::string message, json& output) {
@@ -210,7 +217,7 @@ Simulator(const std::array<EntityMeta, 64>& meta_map,
     meta_map(meta_map), name_map(name_map), initialState(initialState), gas_id(gas_id), worker_id(worker_id), base_ids(base_ids), super_id(super_id){}
 
 json run(std::vector<std::string> lines){
-	bool debug = false;
+	bool debug = true;
 	if(debug)
 		std::cout << "Init Simulator";
     currentState = initialState;
@@ -310,7 +317,7 @@ json run(std::vector<std::string> lines){
                         case Terran:
                         	std::cout << "Energy: " << specialunit->get_energy() << "\n";
                         	std::cout << "Ability cost: " << specialunit->ability_cost() << "\n";
-                        	currentState.timeout_mule = currentState.time_tick + 64;
+                        	currentState.timeout_mule.insert(currentState.timeout_mule.end(), currentState.time_tick + 64);
                         	generate_json = true;
                         	generate_json_super(events);
                         break;

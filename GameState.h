@@ -24,5 +24,5 @@ typedef struct GameState{
     Race gamerace;
 
     //Terran:
-    int timeout_mule;
+    std::list<unsigned int> timeout_mule;
 } GameState;

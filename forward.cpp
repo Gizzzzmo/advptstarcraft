@@ -91,7 +91,7 @@ int main(int argc, char** argv){
     }
     if(debug)
     	std::cout << "Initialize Game State\n";
-    const GameState initialState{0, 5000, 0, supply, 12, 12, 12, 0, entitymap, {}, {}, race, -1};
+    const GameState initialState{0, 5000, 0, supply, 12, 12, 12, 0, entitymap, {}, {}, race, {}};
 
     std::vector<std::string> lines;
     json initial_units;
