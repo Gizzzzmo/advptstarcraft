@@ -155,7 +155,7 @@ private:
 	}
 
     inline bool update_worker_distribution(std::vector<int>& lines, int current_line) {
-        //std::cout << current_line << "\n";
+        std::cout << current_line << "\n";
         int cost_mins = 0, cost_gas = 0;
         int gas = (int) currentState.gas;
         int mins = (int) currentState.minerals;
@@ -164,7 +164,7 @@ private:
             cost_mins += meta_map[lines[current_line]].minerals;
             cost_gas += meta_map[lines[current_line]].gas;
             
-            //std::cout << " " << meta_map[lines[current_line]].name << " " << current_line <<" "<<cost_mins << " "<< cost_gas << "\n";
+            std::cout << " " << meta_map[lines[current_line]].name << " " << current_line <<" "<<cost_mins << " "<< cost_gas << "\n";
             current_line++;
         }while(mins >= cost_mins && gas >= cost_gas);
         int missing_mins = std::max(0, cost_mins - mins);
