@@ -1,1 +1,1 @@
-g++ -o forward forward.cpp
+g++ -o forward -DNDEBUG -O3 forward.cpp
