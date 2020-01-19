@@ -13,6 +13,12 @@ using json = nlohmann::json;
 #include "StarcraftExceptions.h"
 #include "GameState.h"
 
+#ifdef NDEBUG
+#define DEBUG 0
+#else
+#define DEBUG 1
+#endif
+
 //turns a bitmask into a vector of those indices of the mask, where the bit is one
 //TODO: for performance improvements, one might buffer theses vectors
 inline std::vector<int> mask_to_vector(unsigned long mask) {
@@ -174,24 +180,24 @@ private:
 	}
 
     inline bool update_worker_distribution(std::vector<int>& lines, int current_line) {
-        std::cout << "line: "<< current_line << "\n";
+        if(DEBUG) std::cout << "line: "<< current_line << "\n";
         int cost_mins = 0, cost_gas = 0;
         int gas = (int) currentState.gas;
         int mins = (int) currentState.minerals;
-        std::cout << mins << " " << gas << "\n";
+        if(DEBUG) std::cout << mins << " " << gas << "\n";
         do{
             if(current_line >= lines.size())return false;
             cost_mins += meta_map[lines[current_line]].minerals;
             cost_gas += meta_map[lines[current_line]].gas;
             
-            std::cout << " " << meta_map[lines[current_line]].name << " " << current_line <<" "<<cost_mins << " "<< cost_gas << "\n";
+            if(DEBUG) std::cout << " " << meta_map[lines[current_line]].name << " " << current_line <<" "<<cost_mins << " "<< cost_gas << "\n";
             current_line++;
         }while(mins >= cost_mins && gas >= cost_gas);
         int missing_mins = std::max(0, cost_mins - mins);
         int missing_gas = std::max(0, cost_gas - gas);
         unsigned int ideal_mineral_worker = currentState.workers_available * 63 * missing_mins/(missing_mins * 63 + missing_gas * 70);
         unsigned int ideal_gas_worker = currentState.workers_available - ideal_mineral_worker;
-        std::cout << ideal_mineral_worker << " " << ideal_gas_worker << "\n";
+        if(DEBUG) std::cout << ideal_mineral_worker << " " << ideal_gas_worker << "\n";
         unsigned int max_gas_worker = static_cast<unsigned int>(currentState.entitymap[gas_id]->size()*3);
         unsigned int max_mineral_worker = number_of_bases()*16;
         unsigned int new_gas_worker = std::min(max_gas_worker, ideal_gas_worker);
@@ -200,7 +206,7 @@ private:
             std::min(new_gas_worker + currentState.workers_available - new_gas_worker - new_mineral_worker, max_gas_worker);
         new_mineral_worker = 
             std::min(new_mineral_worker + currentState.workers_available - new_gas_worker - new_mineral_worker, max_mineral_worker);
-        std::cout << new_mineral_worker << " " << new_gas_worker << "\n";
+        if(DEBUG) std::cout << new_mineral_worker << " " << new_gas_worker << "\n";
         if(new_gas_worker != currentState.gas_worker || new_mineral_worker != currentState.mineral_worker){
             currentState.gas_worker = new_gas_worker;
             currentState. mineral_worker = new_mineral_worker;
@@ -236,8 +242,7 @@ Simulator(const std::array<EntityMeta, 64>& meta_map,
     meta_map(meta_map), initialState(initialState), gas_id(gas_id), worker_id(worker_id), base_ids(base_ids), super_id(super_id){}
 
 json run(std::vector<int> build_list){
-	bool debug = true;
-	if(debug)
+	if(DEBUG)
 		std::cout << "Init Simulator";
     currentState = initialState;
 
@@ -250,15 +255,14 @@ json run(std::vector<int> build_list){
     json output;
 
     // 1. Liste abarbeiten
-    if(debug)
-    	std::cout << "Finished Initalization. Continue with simulation";
+    if(DEBUG) std::cout << "Finished Initalization. Continue with simulation";
     while(next_line != build_list.size() || !built) {
     	//Init timestep
     	if((++currentState.time_tick) > 1000){
             error_exit("Exceeded max time", output);
             return output;
         }
-        std::cout << "  time: " << currentState.time_tick << "\n";
+        if(DEBUG) std::cout << "  time: " << currentState.time_tick << "\n";
     	generate_json = false;
         std::vector<json> events;
 
@@ -336,8 +340,10 @@ json run(std::vector<int> build_list){
                     special_event["triggeredBy"] = specialunit->id();
                     switch(currentState.gamerace){
                         case Terran:
-                        	std::cout << "Energy: " << specialunit->get_energy() << "\n";
-                        	std::cout << "Ability cost: " << specialunit->ability_cost() << "\n";
+                            if(DEBUG){
+                                std::cout << "Energy: " << specialunit->get_energy() << "\n";
+                                std::cout << "Ability cost: " << specialunit->ability_cost() << "\n";
+                            }
                         	currentState.timeout_mule.insert(currentState.timeout_mule.end(), currentState.time_tick + 64);
                             special_event["name"] = "mule";
                         break;

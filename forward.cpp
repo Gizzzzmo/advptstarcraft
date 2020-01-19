@@ -10,8 +10,7 @@
 
 
 int main(int argc, char** argv){
-	bool debug = false;
-	if(debug)
+	if(DEBUG)
 		std::cout << "Init forward\n";
     std::string racearg(argv[1]);
     Race race = !racearg.compare("terran") ? Race::Terran : !racearg.compare("zerg") ? Race::Zerg : Race::Protoss;
@@ -26,7 +25,7 @@ int main(int argc, char** argv){
     //keep in mind minerals and gas are in hundredths
     std::array<std::shared_ptr<std::list<std::shared_ptr<Entity>>>, 64> entitymap;
     std::list<std::shared_ptr<ProductionEntry>> production_list;
-    if(debug)
+    if(DEBUG)
     	std::cout << "Init entities\n";
     for (unsigned int i = 0; i<entitymap.size(); i++){
         //entitymap[i] = new std::list<Entity*>();
@@ -36,7 +35,7 @@ int main(int argc, char** argv){
     std::array<EntityMeta, 64> meta_map;
 
     std::vector<unsigned int> base_ids;
-    if(debug)
+    if(DEBUG)
     	std::cout << "Switch race\n";
     switch(race){
         case Terran:
@@ -88,14 +87,14 @@ int main(int argc, char** argv){
             break;
         }
     }
-    if(debug)
+    if(DEBUG)
     	std::cout << "Initialize Game State\n";
     const GameState initialState{0, 5000, 0, supply, 12, 12, 12, 0, entitymap, {}, {}, race, {}};
 
     std::vector<std::string> lines;
     json initial_units;
 
-    if(debug)
+    if(DEBUG)
     	std::cout << "Read into entitymap\n";
     for (std::size_t i = 0; i < 64; ++i) {
         if (entitymap[i]->empty())
@@ -106,7 +105,7 @@ int main(int argc, char** argv){
         }
         initial_units[meta_map[i].name] = l;
     }
-    if(debug)
+    if(DEBUG)
     	std::cout << "Read lines from cin\n";
     while(std::cin){
         std::string line; 
@@ -115,14 +114,14 @@ int main(int argc, char** argv){
         if(line == "") break;
     }
     std::vector<int> build_list(lines.size(), 0);
-    for(int i = 0;i < lines.size();++i){
+    for(size_t i = 0;i < lines.size();++i){
         build_list[i] = name_map[lines[i]];
     }
     Simulator sim(meta_map, initialState, gas_id, worker_id, base_ids, super_id);
     json output = sim.run(build_list);
     output["game"] = race == Race::Terran ? "Terr" : race == Race::Zerg ? "Zerg" : "Prot";
     output["initialUnits"] = initial_units;
-    if(debug)
+    if(DEBUG)
     	std::cout << "\n\n\n\n\n";
     std::cout << output << std::endl;
     return 0;

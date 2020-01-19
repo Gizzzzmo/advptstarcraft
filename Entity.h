@@ -10,8 +10,8 @@
 enum Destiny {consumed_at_start, consumed_at_end, occupied, freed};
 
 typedef struct{
-    int minerals;
-    int gas;
+    unsigned int minerals;
+    unsigned int gas;
     unsigned int build_time;
     int supply;
     int supply_provided;
