@@ -9,7 +9,7 @@
 
 enum Destiny {consumed_at_start, consumed_at_end, occupied, freed};
 
-typedef struct EntityMeta{
+typedef struct{
     int minerals;
     int gas;
     unsigned int build_time;

@@ -30,3 +30,9 @@ class requirementNotFulfilledException : public std::exception {
       return "noProducer";
    }
 };
+
+class noGasGeyserAllowedException : public std::exception {
+    const char * what () const throw () {
+      return "notEnoughBases";
+   }
+};

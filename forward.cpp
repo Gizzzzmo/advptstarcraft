@@ -103,8 +103,12 @@ int main(int argc, char** argv){
         if(line != "")lines.push_back(line);
         if(line == "") break;
     }
-    Simulator sim(meta_map, name_map, initialState, gas_id, worker_id, base_ids, super_id);
-    json output = sim.run(lines);
+    std::vector<int> build_list(lines.size(), 0);
+    for(int i = 0;i < lines.size();++i){
+        build_list[i] = name_map[lines[i]];
+    }
+    Simulator sim(meta_map, initialState, gas_id, worker_id, base_ids, super_id);
+    json output = sim.run(build_list);
     output["game"] = race == Race::Terran ? "Terr" : race == Race::Zerg ? "Zerg" : "Prot";
     output["initialUnits"] = initial_units;
     std::cout << output << std::endl;
