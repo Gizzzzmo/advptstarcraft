@@ -18,7 +18,7 @@ using json = nlohmann::json;
 inline std::vector<int> mask_to_vector(unsigned long mask) {
     std::vector<int> v;
     for(size_t i = 0;i < 64;++i){
-        if(mask%2 == 1)v.push_back(i);
+        if(mask%2 == 1) v.push_back(i);
         mask = mask>>1;
     }
     return v;
@@ -33,7 +33,6 @@ private:
     const std::vector<unsigned int> base_ids;
     const int super_id;
     GameState currentState;
-
 
     inline std::list<std::shared_ptr<ProductionEntry>> process_production_list(){
         std::list<std::shared_ptr<ProductionEntry>> result;
@@ -79,7 +78,20 @@ private:
     }
 
     void update_resources(){
-        currentState.minerals += 70*currentState.mineral_worker;
+    	unsigned int current_mineral_workers = 10*currentState.mineral_worker;
+    	if(currentState.gamerace == Terran) {
+    		if(!currentState.timeout_mule.empty()) {
+    			for (int timeout : currentState.timeout_mule) {
+    				if(timeout >= currentState.time_tick)
+					/* MULEs require no other resources or supply and do not conflict
+					 * with harvesting SCVs, but provide the yield of 3.8 SCVs. */
+						current_mineral_workers += 38; //TODO: Unit?
+					//else
+						//currentState.timeout_mule.remove(timeout); //Segmentation fault
+				}
+    		}
+    	}
+        currentState.minerals += 7*current_mineral_workers;
         currentState.gas += 63*currentState.gas_worker;
     }
 
@@ -142,7 +154,6 @@ private:
         return message;
     }
 
-
 	inline void generate_json_build_end(std::vector<json> &events, std::list <std::shared_ptr<ProductionEntry>> &finished_list) {
 		for(std::shared_ptr<ProductionEntry> entry : finished_list){
 			json event;
@@ -154,7 +165,6 @@ private:
 		}
 	}
 
-
 	inline void generate_json_build_start(std::vector<json> &events, const std::shared_ptr<ProductionEntry> &entry) {
         json build_start_event;
         build_start_event["type"] = "build-start";
@@ -164,10 +174,11 @@ private:
 	}
 
     inline bool update_worker_distribution(std::vector<int>& lines, int current_line) {
-        std::cout << current_line << "\n";
+        std::cout << "line: "<< current_line << "\n";
         int cost_mins = 0, cost_gas = 0;
         int gas = (int) currentState.gas;
         int mins = (int) currentState.minerals;
+        std::cout << mins << " " << gas << "\n";
         do{
             if(current_line >= lines.size())return false;
             cost_mins += meta_map[lines[current_line]].minerals;
@@ -180,7 +191,7 @@ private:
         int missing_gas = std::max(0, cost_gas - gas);
         unsigned int ideal_mineral_worker = currentState.workers_available * 63 * missing_mins/(missing_mins * 63 + missing_gas * 70);
         unsigned int ideal_gas_worker = currentState.workers_available - ideal_mineral_worker;
-        //std::cout << ideal_mineral_worker << " " << ideal_gas_worker << "\n";
+        std::cout << ideal_mineral_worker << " " << ideal_gas_worker << "\n";
         unsigned int max_gas_worker = static_cast<unsigned int>(currentState.entitymap[gas_id]->size()*3);
         unsigned int max_mineral_worker = number_of_bases()*16;
         unsigned int new_gas_worker = std::min(max_gas_worker, ideal_gas_worker);
@@ -189,17 +200,14 @@ private:
             std::min(new_gas_worker + currentState.workers_available - new_gas_worker - new_mineral_worker, max_gas_worker);
         new_mineral_worker = 
             std::min(new_mineral_worker + currentState.workers_available - new_gas_worker - new_mineral_worker, max_mineral_worker);
-
-        //std::cout << new_mineral_worker << " " << new_gas_worker << "\n";
-        //std::cout << currentState.workers_available - new_gas_worker << " " << new_mineral_worker << "\n";
+        std::cout << new_mineral_worker << " " << new_gas_worker << "\n";
         if(new_gas_worker != currentState.gas_worker || new_mineral_worker != currentState.mineral_worker){
             currentState.gas_worker = new_gas_worker;
-            currentState.mineral_worker = new_mineral_worker;
+            currentState. mineral_worker = new_mineral_worker;
             return true;
         }
-        return false;
-	}
-
+        else return false;
+    }
 
     unsigned int number_of_bases(){
         unsigned int sum = 0;
@@ -216,6 +224,7 @@ private:
             special_unit->updateEnergy();
         }
     }
+
 public:
 
 Simulator(const std::array<EntityMeta, 64>& meta_map,
@@ -227,6 +236,9 @@ Simulator(const std::array<EntityMeta, 64>& meta_map,
     meta_map(meta_map), initialState(initialState), gas_id(gas_id), worker_id(worker_id), base_ids(base_ids), super_id(super_id){}
 
 json run(std::vector<int> build_list){
+	bool debug = true;
+	if(debug)
+		std::cout << "Init Simulator";
     currentState = initialState;
 
     bool built = true;
@@ -238,13 +250,15 @@ json run(std::vector<int> build_list){
     json output;
 
     // 1. Liste abarbeiten
+    if(debug)
+    	std::cout << "Finished Initalization. Continue with simulation";
     while(next_line != build_list.size() || !built) {
-        //std::cout << currentState.time_tick << " " << line << "\n";
     	//Init timestep
     	if((++currentState.time_tick) > 1000){
             error_exit("Exceeded max time", output);
             return output;
         }
+        std::cout << "  time: " << currentState.time_tick << "\n";
     	generate_json = false;
         std::vector<json> events;
 
@@ -317,8 +331,15 @@ json run(std::vector<int> build_list){
             for(std::shared_ptr<Entity> specialunit : *currentState.entitymap[super_id]){
                 if(specialunit->cast_if_possible()){
                     generate_json = true;
+                    json special_event;
+                    special_event["type"] = "special";
+                    special_event["triggeredBy"] = specialunit->id();
                     switch(currentState.gamerace){
                         case Terran:
+                        	std::cout << "Energy: " << specialunit->get_energy() << "\n";
+                        	std::cout << "Ability cost: " << specialunit->ability_cost() << "\n";
+                        	currentState.timeout_mule.insert(currentState.timeout_mule.end(), currentState.time_tick + 64);
+                            special_event["name"] = "mule";
                         break;
                         case Zerg:
                         break;
@@ -328,20 +349,17 @@ json run(std::vector<int> build_list){
                             for(std::shared_ptr<ProductionEntry> entry : target->producees){
                                 entry->chrono_boost(currentState, target->get_chrono_until());
                             }
-                            json specialevent;
-                            specialevent["type"] = "special";
-                            specialevent["name"] = "chronoboost";
-                            specialevent["triggeredBy"] = specialunit->id();
-                            specialevent["targetBuilding"] = currentState.entitymap[0]->front()->id();
-                            events.push_back(specialevent);
+                            special_event["name"] = "chronoboost";
+                            special_event["targetBuilding"] = currentState.entitymap[0]->front()->id();
                         break;
                     }
+                    events.push_back(special_event);
                     break;
                 }
             }
         }
 
-        if(update_worker_distribution(build_list, next_line + (built ? 1 : 0)))
+        if(update_worker_distribution(build_list, next_line - (built ? 0 : 1)))
         	generate_json = true;
 
         if(generate_json){

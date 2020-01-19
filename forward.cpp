@@ -1,7 +1,6 @@
 #include "Simulator.h"
 #include "json.hpp"
 #include "Entity.h"
-using json = nlohmann::json;
 #include <string>
 #include <list>
 #include <vector>
@@ -11,6 +10,9 @@ using json = nlohmann::json;
 
 
 int main(int argc, char** argv){
+	bool debug = false;
+	if(debug)
+		std::cout << "Init forward\n";
     std::string racearg(argv[1]);
     Race race = !racearg.compare("terran") ? Race::Terran : !racearg.compare("zerg") ? Race::Zerg : Race::Protoss;
     
@@ -24,6 +26,8 @@ int main(int argc, char** argv){
     //keep in mind minerals and gas are in hundredths
     std::array<std::shared_ptr<std::list<std::shared_ptr<Entity>>>, 64> entitymap;
     std::list<std::shared_ptr<ProductionEntry>> production_list;
+    if(debug)
+    	std::cout << "Init entities\n";
     for (unsigned int i = 0; i<entitymap.size(); i++){
         //entitymap[i] = new std::list<Entity*>();
     	std::shared_ptr<std::list<std::shared_ptr<Entity>>> a(new std::list<std::shared_ptr<Entity>>());
@@ -32,6 +36,8 @@ int main(int argc, char** argv){
     std::array<EntityMeta, 64> meta_map;
 
     std::vector<unsigned int> base_ids;
+    if(debug)
+    	std::cout << "Switch race\n";
     switch(race){
         case Terran:
         {
@@ -59,10 +65,10 @@ int main(int argc, char** argv){
             	std::shared_ptr<Entity> a(new Entity(meta_map, 9, 0));
                 entitymap[9]->push_back(a);
             }
-            std::shared_ptr<Entity> a(new Entity( meta_map, 0, 0));
-            std::shared_ptr<Entity> b(new Entity( meta_map, 0, 0));
-            entitymap[0]->push_back(a);
-            entitymap[16]->push_back(b);
+            std::shared_ptr<Entity> hatch(new Entity( meta_map, 0, 0));
+            entitymap[0]->push_back(hatch);
+            std::shared_ptr<Entity> ovi(new Entity( meta_map, 16, 0));
+            entitymap[16]->push_back(ovi);
             supply = 14;
             break;
         }
@@ -82,12 +88,15 @@ int main(int argc, char** argv){
             break;
         }
     }
-
-    const GameState initialState{0, 5000, 0, supply, 12, 12, 12, 0, entitymap, {}, {}, race};
+    if(debug)
+    	std::cout << "Initialize Game State\n";
+    const GameState initialState{0, 5000, 0, supply, 12, 12, 12, 0, entitymap, {}, {}, race, {}};
 
     std::vector<std::string> lines;
     json initial_units;
 
+    if(debug)
+    	std::cout << "Read into entitymap\n";
     for (std::size_t i = 0; i < 64; ++i) {
         if (entitymap[i]->empty())
             continue;
@@ -97,6 +106,8 @@ int main(int argc, char** argv){
         }
         initial_units[meta_map[i].name] = l;
     }
+    if(debug)
+    	std::cout << "Read lines from cin\n";
     while(std::cin){
         std::string line; 
         std::getline(std::cin, line);
@@ -111,6 +122,8 @@ int main(int argc, char** argv){
     json output = sim.run(build_list);
     output["game"] = race == Race::Terran ? "Terr" : race == Race::Zerg ? "Zerg" : "Prot";
     output["initialUnits"] = initial_units;
+    if(debug)
+    	std::cout << "\n\n\n\n\n";
     std::cout << output << std::endl;
     return 0;
 }

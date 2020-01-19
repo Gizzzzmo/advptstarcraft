@@ -114,6 +114,9 @@ public:
         if(energy > max_nrg)energy = max_nrg;
     }
 
+    inline int get_energy(){
+    	return energy;
+    }
     inline bool check_and_occupy(){
         if(occupied){
             --occupied;
