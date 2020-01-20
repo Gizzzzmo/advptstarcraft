@@ -30,6 +30,7 @@ inline std::vector<int> mask_to_vector(unsigned long mask) {
     return v;
 }
 
+template<Race gamerace>
 class Simulator{
 private:
     const unsigned int worker_id;
@@ -85,7 +86,7 @@ private:
 
     void update_resources(){
     	unsigned int current_mineral_workers = 10*currentState.mineral_worker;
-    	if(currentState.gamerace == Terran) {
+    	if(gamerace == Terran) {
     		if(!currentState.timeout_mule.empty()) {
     			for (int timeout : currentState.timeout_mule) {
     				if(timeout >= currentState.time_tick)
@@ -234,7 +235,7 @@ private:
 public:
 
 Simulator(const std::array<EntityMeta, 64>& meta_map,
-            const GameState initialState,
+            const GameState &initialState,
             const unsigned int gas_id,
             const unsigned int worker_id, 
             const std::vector<unsigned int>& base_ids,
@@ -338,7 +339,7 @@ json run(std::vector<int> build_list){
                     json special_event;
                     special_event["type"] = "special";
                     special_event["triggeredBy"] = specialunit->id();
-                    switch(currentState.gamerace){
+                    switch(gamerace){
                         case Terran:
                             if(DEBUG){
                                 std::cout << "Energy: " << specialunit->get_energy() << "\n";

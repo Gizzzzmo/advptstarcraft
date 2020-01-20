@@ -1,2 +1,5 @@
 .vscode/
 /.project
+forward
+compile_commands.json
+build
