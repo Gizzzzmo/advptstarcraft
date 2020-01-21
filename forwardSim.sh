@@ -1,1 +1,1 @@
-./forward $1 < $2
+./build/forward $1 < $2
