@@ -3,10 +3,10 @@
 #include <array>
 #include <list>
 #include <memory>
+#include "ProductionEntry.h"
 
-class ProductionEntry;
+
 class Entity;
-
 enum Race{Terran, Zerg, Protoss};
 
 typedef struct GameState{
