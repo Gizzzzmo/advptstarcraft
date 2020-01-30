@@ -33,7 +33,7 @@ private:
     unsigned int occupied;
     unsigned int obj_id;
     unsigned int energy;
-    unsigned int chrono_boosted_until;;
+    unsigned int chrono_boosted_until;
     int clss_id;
     std::string idd;
     const std::array<EntityMeta, 64>& metamap;

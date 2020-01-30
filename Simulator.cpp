@@ -163,24 +163,28 @@ inline void Simulator<gamerace>::generate_json_build_start(std::vector<json> &ev
 
 template<Race gamerace>
 inline bool Simulator<gamerace>::update_worker_distribution(std::vector<int>& lines, int current_line) {
-    if(DEBUG) std::cout << "line: "<< current_line << "\n";
+    if(DEBUG)
+        std::cout << "line: "<< current_line << "\n";
     int cost_mins = 0, cost_gas = 0;
     int gas = (int) currentState.gas;
     int mins = (int) currentState.minerals;
-    if(DEBUG) std::cout << mins << " " << gas << "\n";
+    if(DEBUG)
+        std::cout << mins << " " << gas << "\n";
     do{
         if(current_line >= lines.size())return false;
         cost_mins += meta_map[lines[current_line]].minerals;
         cost_gas += meta_map[lines[current_line]].gas;
         
-        if(DEBUG) std::cout << " " << meta_map[lines[current_line]].name << " " << current_line <<" "<<cost_mins << " "<< cost_gas << "\n";
+        if(DEBUG)
+            std::cout << " " << meta_map[lines[current_line]].name << " " << current_line <<" "<<cost_mins << " "<< cost_gas << "\n";
         current_line++;
     }while(mins >= cost_mins && gas >= cost_gas);
     int missing_mins = std::max(0, cost_mins - mins);
     int missing_gas = std::max(0, cost_gas - gas);
     unsigned int ideal_mineral_worker = currentState.workers_available * 63 * missing_mins/(missing_mins * 63 + missing_gas * 70);
     unsigned int ideal_gas_worker = currentState.workers_available - ideal_mineral_worker;
-    if(DEBUG) std::cout << ideal_mineral_worker << " " << ideal_gas_worker << "\n";
+    if(DEBUG)
+        std::cout << ideal_mineral_worker << " " << ideal_gas_worker << "\n";
     unsigned int max_gas_worker = static_cast<unsigned int>(currentState.entitymap[gas_id]->size()*3);
     unsigned int max_mineral_worker = number_of_bases()*16;
     unsigned int new_gas_worker = std::min(max_gas_worker, ideal_gas_worker);
@@ -189,10 +193,11 @@ inline bool Simulator<gamerace>::update_worker_distribution(std::vector<int>& li
         std::min(new_gas_worker + currentState.workers_available - new_gas_worker - new_mineral_worker, max_gas_worker);
     new_mineral_worker = 
         std::min(new_mineral_worker + currentState.workers_available - new_gas_worker - new_mineral_worker, max_mineral_worker);
-    if(DEBUG) std::cout << new_mineral_worker << " " << new_gas_worker << "\n";
+    if(DEBUG)
+        std::cout << new_mineral_worker << " " << new_gas_worker << " new\n";
     if(new_gas_worker != currentState.gas_worker || new_mineral_worker != currentState.mineral_worker){
         currentState.gas_worker = new_gas_worker;
-        currentState. mineral_worker = new_mineral_worker;
+        currentState.mineral_worker = new_mineral_worker;
         return true;
     }
     else return false;
@@ -226,7 +231,7 @@ Simulator<gamerace>::Simulator(const std::array<EntityMeta, 64>& meta_map,
             const unsigned int worker_id, 
             const std::vector<unsigned int>& base_ids,
             const unsigned int super_id) :
-    worker_id(worker_id), gas_id(gas_id), meta_map(meta_map), initialState(initialState), base_ids(base_ids), super_id(super_id){}
+    worker_id(worker_id), gas_id(gas_id), meta_map(meta_map), base_ids(base_ids), super_id(super_id), initialState(initialState), currentState(initialState){}
 
 template<Race gamerace>
 json Simulator<gamerace>::run(std::vector<int> build_list){

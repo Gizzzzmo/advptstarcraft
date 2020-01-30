@@ -6,6 +6,7 @@
 #include <vector>
 #include <array>
 #include <memory>
+#include <iostream>
 //https://thispointer.com/learning-shared_ptr-part-1-usage-details/
 
 
@@ -89,7 +90,7 @@ int main(int argc, char** argv){
     }
     if(DEBUG)
     	std::cout << "Initialize Game State\n";
-    const GameState initialState{0, 5000, 0, supply, 12, 12, 12, 0, entitymap, {}, {}, {}};
+    const GameState initialState(0, 5000, 0, supply, 12, 12, 12, 0, entitymap, {}, {});
 
     std::vector<std::string> lines;
     json initial_units;

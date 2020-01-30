@@ -25,7 +25,7 @@ private:
     const unsigned int worker_id;
     const unsigned int gas_id;
     const std::array<EntityMeta, 64>& meta_map;
-    const GameState& initialState;
+    const GameState initialState;
     const std::vector<unsigned int> base_ids;
     const int super_id;
     GameState currentState;
