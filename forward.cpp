@@ -88,9 +88,6 @@ int main(int argc, char** argv){
             break;
         }
     }
-    if(DEBUG)
-    	std::cout << "Initialize Game State\n";
-    const GameState initialState(0, 5000, 0, supply, 12, 12, 12, 0, entitymap, {}, {});
 
     std::vector<std::string> lines;
     json initial_units;
@@ -118,23 +115,26 @@ int main(int argc, char** argv){
     for(size_t i = 0;i < lines.size();++i){
         build_list[i] = name_map[lines[i]];
     }
+    if(DEBUG)
+    	std::cout << "Initialize Game State\n";
+    const GameState initialState(0, 5000, 0, supply, 12, 12, 12, 0, 0, 12, true, entitymap, {}, {});
     json output;
     switch(race){
         case Terran:
         {
-            Simulator<Terran> sim(meta_map, initialState, gas_id, worker_id, base_ids, super_id);
+            Simulator<Terran> sim(meta_map, initialState, gas_id, worker_id, base_ids, {}, super_id);
             output = sim.run(build_list);
             break;
         }
         case Zerg:
         {
-            Simulator<Zerg> sim(meta_map, initialState, gas_id, worker_id, base_ids, super_id);
+            Simulator<Zerg> sim(meta_map, initialState, gas_id, worker_id, base_ids, {}, super_id);
             output = sim.run(build_list);
             break;
         }
         case Protoss:
         {
-            Simulator<Protoss> sim(meta_map, initialState, gas_id, worker_id, base_ids, super_id);
+            Simulator<Protoss> sim(meta_map, initialState, gas_id, worker_id, base_ids, {}, super_id);
             output = sim.run(build_list);
             break;
         }

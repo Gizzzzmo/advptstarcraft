@@ -26,9 +26,9 @@ private:
     const unsigned int gas_id;
     const std::array<EntityMeta, 64>& meta_map;
     const GameState initialState;
-    const std::vector<unsigned int> base_ids;
+    const std::vector<unsigned int>& base_ids;
+    const std::vector<unsigned int>& building_ids;
     const int super_id;
-    GameState currentState;
 
     inline std::list<std::shared_ptr<ProductionEntry>> process_production_list();
 
@@ -46,18 +46,32 @@ private:
 
     inline bool update_worker_distribution(std::vector<int>& lines, int current_line);
 
+    inline bool update_worker_distribution();
+
     unsigned int number_of_bases();
 
     void update_energy();
 
 public:
+    GameState currentState;
 
 Simulator(const std::array<EntityMeta, 64>& meta_map,
             const GameState &initialState,
             const unsigned int gas_id,
             const unsigned int worker_id, 
             const std::vector<unsigned int>& base_ids,
+            const std::vector<unsigned int>& building_ids,
             const unsigned int super_id);
 
-json run(std::vector<int> build_list);
+    json run(std::vector<int> build_list);
+
+    std::shared_ptr<Entity> get_caster();
+
+    std::list<std::shared_ptr<Entity>> get_chrono_targets();
+
+    std::array<int, 64> getOptions();
+
+    void step(int entity_id, std::shared_ptr<Entity> target, std::shared_ptr<Entity> caster);
+
+    inline bool worker_distribution_well_defined();
 };

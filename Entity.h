@@ -116,7 +116,7 @@ public:
     void chrono_boost(GameState& currentState);
 
     bool cast_if_possible();
-    
+    bool can_cast();
     // use only for occupied producers
     void make_available(GameState& state);
 };

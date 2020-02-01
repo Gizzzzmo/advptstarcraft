@@ -12,7 +12,12 @@ GameState::GameState(const GameState& state) :
     workers_available(state.workers_available),
     mineral_worker(state.mineral_worker),
     gas_worker(state.gas_worker),
-    timeout_mule(state.timeout_mule) {
+    timeout_mule(state.timeout_mule),
+    build_list(state.build_list),
+    gas_geysers_available(gas_geysers_available),
+    final_supply(state.final_supply),
+    entity_count(state.entity_count),
+    built(state.built) {
         std::map<std::shared_ptr<Entity>, std::shared_ptr<Entity>> entity_translation_map;
         for(int i = 0;i < 64;i++){
             std::shared_ptr<std::list<std::shared_ptr<Entity>>> list(new std::list<std::shared_ptr<Entity>>);
@@ -40,6 +45,22 @@ GameState::GameState(const GameState& state) :
         }
 }
 
+
+std::ostream& operator<<(std::ostream  &outstream, GameState& state){
+    outstream << "time: " << state.time_tick <<
+        "\n minerals: " << state.minerals << 
+        "\n gas: " << state.gas << 
+        "\n max supply: " << state.supply << 
+        "\n supply used: " << state.supply_used << 
+        "\n workers available: " << state.workers_available << 
+        "\n gas workers: " << state.gas_worker << 
+        "\n sth was built: " << state.built << 
+        "\n next thing to be built: " << state.build_list.front() << 
+        "\n minerals: " << state.minerals << 
+        "\n minerals: " << state.minerals << "\n";
+        return outstream;
+}
+
 GameState& GameState::operator=(const GameState& state){
     if(this != &state){
 
@@ -52,6 +73,11 @@ GameState& GameState::operator=(const GameState& state){
         mineral_worker = state.mineral_worker;
         gas_worker = state.gas_worker;
         timeout_mule = state.timeout_mule;
+        build_list = state.build_list;
+        gas_geysers_available = state.gas_geysers_available;
+        final_supply = state.final_supply;
+        entity_count = state.entity_count;
+        built = state.built;
 
         std::map<std::shared_ptr<Entity>, std::shared_ptr<Entity>> entity_translation_map;
         for(int i = 0;i < 64;i++){
