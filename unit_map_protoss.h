@@ -97,3 +97,5 @@ name_map["VoidRay"] = 31;
 
 meta_map[32] = {15000, 10000, 35, 2, 0, 20000000, 5000000, 0, 0x0000000000400000, Destiny::occupied, 0x0000000000000000, 1, 0, 0, 1, "Phoenix"};
 name_map["Phoenix"] = 32;
+
+meta_map[33] = {2};

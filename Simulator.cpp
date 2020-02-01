@@ -318,8 +318,32 @@ std::array<int, 64> Simulator<gamerace>::getOptions(){
     int j = 0;
     for(int i = 0;i < meta_map.size();i++){
         const EntityMeta& meta = meta_map[i];
+        if(meta.minerals == 2)break;
+        bool req_fulfilled = false;
+        if(meta.requirement_mask == 0)req_fulfilled = true;
+        else{
+            for(int req_id : mask_to_vector(meta.requirement_mask)){
+                if(currentState.entity_count[req_id] > 0){
+                    req_fulfilled = true;
+                    break;
+                }
+            }
+        }
+
+        bool producer_available = false;
+        if(meta.production_mask == 0)producer_available = true;
+        else{
+            for(int prd_id : mask_to_vector(meta.production_mask)){
+                if(currentState.entity_count[prd_id] > 0){
+                    producer_available = true;
+                    break;
+                }
+            }
+        }
         if((meta.gas == 0 || currentState.gas_geysers_available > 0)
-                && (true))
+                && (meta.supply <= currentState.final_supply)
+                && req_fulfilled
+                && producer_available)
         {
             result_list[j++] = i;
         }

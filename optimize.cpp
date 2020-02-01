@@ -8,6 +8,41 @@
 
 enum Scenario{Rush, Push};
 
+template<Race gamerace, Scenario scenario>
+void optimize(const std::array<EntityMeta, 64>& meta_map,
+    const GameState& initialState,
+    const int gas_id,
+    const int worker_id,
+    const std::vector<unsigned int>& base_ids,
+    const std::vector<unsigned int>& building_ids,
+    const int super_id,
+    const int leaf_qualifier)
+{
+    Simulator<gamerace> sim(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id);
+    Node root(-1, -1, initialState, nullptr);
+    dfs(sim, root);
+
+    std::cout << sim.currentState << "\n";
+    std::array<int, 64> options = sim.getOptions();
+    for(int i = 0;i < 64;i++){
+        std::cout << "option: " << options[i] << "\n";
+        if(options[i] == -1)break;
+        std::cout << "        " << meta_map[options[i]].name << "\n";
+    }
+    sim.step(0, nullptr, nullptr);
+    std::cout << sim.currentState << "\n";
+    while(sim.worker_distribution_well_defined()){
+        sim.step(-1, nullptr, nullptr);
+        std::cout << sim.currentState << "\n";
+    }
+}
+
+template<Race gamerace>
+void dfs(Simulator<gamerace>& sim, Node& currentNode){
+    
+}
+
+
 int main(int argc, char** argv){
     std::string scenario(argv[1]), target_unit(argv[2]);
     
@@ -113,33 +148,4 @@ int main(int argc, char** argv){
             break;
     }
     return 0;
-}
-
-template<Race gamerace, Scenario scenario>
-void optimize(const std::array<EntityMeta, 64>& meta_map,
-    const GameState& initialState,
-    const int gas_id,
-    const int worker_id,
-    const std::vector<unsigned int>& base_ids,
-    const std::vector<unsigned int>& building_ids,
-    const int super_id,
-    const int leaf_qualifier)
-{
-    Simulator<gamerace> sim(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id);
-    std::unique_ptr<GameState> rootState = new GameState(initialState);
-    Node root = {-1, -1, rootState, nullptr, {}};
-    dfs(sim, root);
-
-    std::cout << sim.currentState << "\n";
-    sim.step(0, nullptr, nullptr);
-    std::cout << sim.currentState << "\n";
-    while(sim.worker_distribution_well_defined()){
-        sim.step(-1, nullptr, nullptr);
-        std::cout << sim.currentState << "\n";
-    }
-}
-
-template<Race gamerace>
-void dfs(Simulator<gamerace>& sim, Node& currentNode){
-    
 }

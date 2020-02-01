@@ -109,3 +109,5 @@ name_map["Ultralisk"] = 35;
 
 meta_map[36] = {15000, 15000, 34, 2, 0, 0, 0, 0, 0x0000000400000000, Destiny::consumed_at_start, 0x0000000000200000, 1, 0, 0, 1, "BroodLord"};
 name_map["BroodLord"] = 36;
+
+meta_map[37] = {2};

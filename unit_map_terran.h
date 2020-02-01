@@ -112,3 +112,4 @@ name_map["Liberator"] = 36;
 
 meta_map[37] = {10000, 20000, 60, 2, 0, 20000000, 5000000, 0, 0x0000000000100000, Destiny::occupied, 0x0000000000000000, 1, 0, 0, 1, "Raven"};
 name_map["Raven"] = 37;
+meta_map[38] = {2};

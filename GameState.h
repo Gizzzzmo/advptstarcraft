@@ -32,8 +32,11 @@ public:
             timeout_mule(timeout_mule),
             gas_geysers_available(gas_geysers_available),
             final_supply(final_supply),
-            entity_count(entity_count),
-            built(built){};
+            built(built){
+                for(int i = 0;i < 64;i++){
+                    entity_count[i] = entitymap[i]->size();
+                }
+            };
     GameState(const GameState& state);
     GameState& operator=(const GameState& state);
     friend std::ostream &operator<<(std::ostream  &outstream, GameState& state);
