@@ -128,18 +128,71 @@ void optimize(const std::array<EntityMeta, 64>& meta_map,
     Simulator<gamerace> sim(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id);
     std::unique_ptr<GameState> rootState = new GameState(initialState);
     Node root = {-1, -1, rootState, nullptr, {}};
-    dfs(sim, root);
-
-    std::cout << sim.currentState << "\n";
     sim.step(0, nullptr, nullptr);
-    std::cout << sim.currentState << "\n";
-    while(sim.worker_distribution_well_defined()){
-        sim.step(-1, nullptr, nullptr);
-        std::cout << sim.currentState << "\n";
-    }
+    dfs(sim, root, leaf_qualifier);
+    eval_tree(root);
 }
 
 template<Race gamerace>
-void dfs(Simulator<gamerace>& sim, Node& currentNode){
-    
+void dfs(Simulator<gamerace>& sim, Node& currentNode, const int leaf_qualifier, Scenario scenario){
+	while(1) {
+		//Abbruchbedingungen
+		switch (scenario) {
+		case Rush:
+			if(sim.gateState.time_tick == leaf_qualifier)
+				return;
+		case Push:
+			if(sim.get_qualified_id_entities() == leaf_qualifier)
+				return;
+		}
+
+		std::shared_ptr<Entity> caster = sim.get_caster();
+		GameState currentState = sim.currentState;
+		std::array<int, 64> options = sim.get_options();
+
+		std::cout << sim.currentState << "\n";
+		//while(sim.worker_distribution_well_defined()) {
+		//	GameState currentState = sim.currentState;
+			//Cast options
+		//}
+		bool something_build;
+
+		//Build options
+		for(ent_id : options) {
+			something_build = true;
+
+			if(caster) {
+				std::list<std::shared_ptr<Entity>> targets = sim.get_chrono_targets();
+				for(std::shared_ptr<Entity> target : get_chrono_targets()) {
+					sim.state = currentState;
+					sim.step(ent_id, target, {});
+					Node newnode(ent_id, target, sim.currentState, &currentNode);
+					currentNode.children.push_back(newnode);
+					dfs(sim, newnode);
+				}
+			} else {
+				sim.currentState = currentState;
+				sim.step(ent_id, nullptr, {});
+				Node newnode(ent_id, -1, sim.currentState, &currentNode);
+				currentNode.children.push_back(newnode);
+				dfs(sim, newnode);
+			}
+		}
+
+		//Cast options
+		if(caster && !something_build) {
+			something_build = true;
+			std::list<std::shared_ptr<Entity>> targets = sim.get_chrono_targets();
+			for(std::shared_ptr<Entity> target : get_chrono_targets()) {
+				sim.state = currentState;
+				sim.step(-1, target, {});
+				Node newnode(-1, target, sim.currentState, &currentNode);
+				currentNode.children.push_back(newnode);
+				dfs(sim, newnode);
+			}
+		}
+		if(!something_build) {
+			sim.step(-1, nullptr, {});
+		}
+	}
 }

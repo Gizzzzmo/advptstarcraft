@@ -66,12 +66,16 @@ Simulator(const std::array<EntityMeta, 64>& meta_map,
     json run(std::vector<int> build_list);
 
     std::shared_ptr<Entity> get_caster();
+    //If someone can cast, return caster, else nullptr
 
     std::list<std::shared_ptr<Entity>> get_chrono_targets();
+    //Protoss -> Buildings that can produce something
 
     std::array<int, 64> getOptions();
+    //Possible entities
 
     void step(int entity_id, std::shared_ptr<Entity> target, std::shared_ptr<Entity> caster);
+//Propagates game one time step
 
     inline bool worker_distribution_well_defined();
 };
