@@ -8,6 +8,75 @@
 
 enum Scenario{Rush, Push};
 
+int target_id;
+int best_score;
+int leaf_qualifier;
+std::shared_ptr<Node> best_leaf;
+
+
+
+template<Scenario scenario, Race gamerace>
+void dfs(Simulator<gamerace>& sim, std::shared_ptr<Node>& currentNode){
+    switch (scenario) {
+    case Push:
+        if(sim.currentState.time_tick == leaf_qualifier){
+            if(sim.currentState.entitymap[target_id]->size() > best_score){
+                best_score = sim.currentState.entitymap[target_id]->size();
+                best_leaf = currentNode;
+            }
+            return;
+        }
+    case Rush:
+        if(sim.currentState.entity_count[target_id] == leaf_qualifier){
+            if(sim.currentState.time_tick < best_score){
+                best_score = sim.currentState.time_tick;
+                best_leaf = currentNode;
+            }
+            return;
+        }
+    }
+
+    std::shared_ptr<Entity> caster = gamerace == Race::Protoss ? sim.get_caster() : nullptr;
+    GameState currentState = sim.currentState;
+    std::array<int, 64> options = sim.getOptions();
+
+    std::cout << sim.currentState << "\n";
+    //while(sim.worker_distribution_well_defined()) {
+    //	GameState currentState = sim.currentState;
+        //Cast options
+    //}
+    bool something_build;
+
+    //Build options
+    for(int ent_id : options) {
+        if(caster) {
+            std::list<std::shared_ptr<Entity>> targets = sim.get_chrono_targets();
+            for(std::shared_ptr<Entity> target : targets) {
+                sim.currentState = currentState;
+                sim.step(ent_id, target, caster);
+                std::shared_ptr<Node> newnode(new Node(ent_id, target->obj_id, currentNode));
+                currentNode->children.push_back(newnode);
+                dfs<scenario>(sim, newnode);
+            }
+        }
+        if(ent_id == -1)break;
+
+        something_build = true;
+
+        sim.currentState = currentState;
+        sim.step(ent_id, nullptr, caster);
+        std::shared_ptr<Node> newnode(new Node(ent_id, -1, currentNode));
+        currentNode->children.push_back(newnode);
+        dfs<scenario>(sim, newnode);
+    }
+
+    //Cast options
+    if(!something_build) {
+        sim.step(-1, nullptr, nullptr);
+        dfs<scenario>(sim, currentNode);
+    }
+}
+
 template<Race gamerace, Scenario scenario>
 void optimize(const std::array<EntityMeta, 64>& meta_map,
     const GameState& initialState,
@@ -15,13 +84,14 @@ void optimize(const std::array<EntityMeta, 64>& meta_map,
     const int worker_id,
     const std::vector<unsigned int>& base_ids,
     const std::vector<unsigned int>& building_ids,
-    const int super_id,
-    const int leaf_qualifier)
+    const int super_id)
 {
     Simulator<gamerace> sim(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id);
-    Node root(-1, -1, initialState, nullptr);
-    dfs(sim, root);
-
+    std::shared_ptr<Node> root(new Node(-1, -1, nullptr));
+    if(scenario == Scenario::Push)best_score = 0;
+    else best_score = 1001;
+    dfs<scenario>(sim, root);
+    /*
     std::cout << sim.currentState << "\n";
     std::array<int, 64> options = sim.getOptions();
     for(int i = 0;i < 64;i++){
@@ -34,19 +104,13 @@ void optimize(const std::array<EntityMeta, 64>& meta_map,
     while(sim.worker_distribution_well_defined()){
         sim.step(-1, nullptr, nullptr);
         std::cout << sim.currentState << "\n";
-    }
+    }*/
 }
-
-template<Race gamerace>
-void dfs(Simulator<gamerace>& sim, Node& currentNode){
-    
-}
-
 
 int main(int argc, char** argv){
     std::string scenario(argv[1]), target_unit(argv[2]);
-    
-    int leaf_qualifier = std::stoi(argv[3]);
+
+    leaf_qualifier = std::stoi(argv[3]);
     Race gamerace;
     std::array<EntityMeta, 64> meta_map;
     std::map<std::string, int> name_map;
@@ -119,33 +183,36 @@ int main(int argc, char** argv){
             supply = 14;
         }
     }
+
+    target_id = name_map[target_unit];
     const GameState initialState(0, 5000, 0, supply, 12, 12, 12, 0, 0, 12, true, entitymap, {}, {});
 
     switch(gamerace){
         case Protoss:
             if(!scenario.compare("rush")){
-                optimize<Race::Protoss, Scenario::Rush>(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id, leaf_qualifier);
+                optimize<Race::Protoss, Scenario::Rush>(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id);
             }
             else if(!scenario.compare("push")){
-                optimize<Race::Protoss, Scenario::Push>(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id, leaf_qualifier);
+                optimize<Race::Protoss, Scenario::Push>(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id);
             }
             break;
         case Terran:
             if(!scenario.compare("rush")){
-                optimize<Race::Terran, Scenario::Rush>(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id, leaf_qualifier);
+                optimize<Race::Terran, Scenario::Rush>(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id);
             }
             else if(!scenario.compare("push")){
-                optimize<Race::Terran, Scenario::Push>(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id, leaf_qualifier);
+                optimize<Race::Terran, Scenario::Push>(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id);
             }
             break;
         case Zerg:
             if(!scenario.compare("rush")){
-                optimize<Race::Zerg, Scenario::Rush>(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id, leaf_qualifier);
+                optimize<Race::Zerg, Scenario::Rush>(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id);
             }
             else if(!scenario.compare("push")){
-                optimize<Race::Zerg, Scenario::Push>(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id, leaf_qualifier);
+                optimize<Race::Zerg, Scenario::Push>(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id);
             }
             break;
     }
     return 0;
 }
+
