@@ -3,8 +3,8 @@
 // Helper Method
 //turns a bitmask into a vector of those indices of the mask, where the bit is one
 //TODO: for performance improvements, one might buffer theses vectors
-inline std::vector<int> mask_to_vector(unsigned long mask) {
-    std::vector<int> v;
+inline std::vector<unsigned> mask_to_vector(unsigned long mask) {
+    std::vector<unsigned> v;
     for(size_t i = 0;i < 64;++i){
         if(mask%2 == 1) v.push_back(i);
         mask = mask>>1;
@@ -32,6 +32,7 @@ inline std::list<std::shared_ptr<ProductionEntry>> Simulator<gamerace>::process_
                 case consumed_at_end:
                     for(std::list<std::shared_ptr<Entity>>::iterator it = producers->begin();it != producers->end();++it){
                         if(*it == entry->producer){
+                            if (gamerace == Zerg) entry->producee->finalize(entry->producer);
                             producers->erase(it);
                             break;
                         }
@@ -79,6 +80,11 @@ void Simulator<gamerace>::update_resources(){
 }
 
 template<Race gamerace>
+bool Simulator<gamerace>::needs_larva(int class_id){
+    return gamerace == Race::Zerg && meta_map[class_id].production_mask == 0x0000000010000000;
+}
+
+template<Race gamerace>
 void Simulator<gamerace>::error_exit(std::string message, json& output) {
     output["buildlistValid"] = 0;
     std::cerr << message << "\n";
@@ -86,7 +92,7 @@ void Simulator<gamerace>::error_exit(std::string message, json& output) {
 
 template<Race gamerace>
 std::shared_ptr<ProductionEntry> Simulator<gamerace>::check_and_build(int class_id){
-    if(class_id == gas_id && currentState.entitymap[class_id]->size() == number_of_bases()*2)throw noGasGeyserAllowedException();
+    if(class_id == gas_id && currentState.entitymap[class_id]->size() == number_of_bases()*2)throw noGasGeyserAllowedException(); //TODO: Fix dis
     if(meta_map[class_id].supply > static_cast<int>(currentState.supply-currentState.supply_used)) throw noSupplyException();
     //bitmask of 0 is interpreted as there not being any requirements, since all entities should be buildable somehow
     if(meta_map[class_id].requirement_mask == 0)goto req_fulfilled;
@@ -98,16 +104,26 @@ std::shared_ptr<ProductionEntry> Simulator<gamerace>::check_and_build(int class_
     if(currentState.gas < meta_map[class_id].gas) throw noGasException();
     if(currentState.minerals < meta_map[class_id].minerals)throw noMineralsException();
 
+    std::vector<unsigned> producer_types;
+    if(needs_larva(class_id))
+        producer_types = base_ids;
+    else
+        producer_types = mask_to_vector(meta_map[class_id].production_mask);
+
     //possibly search for chronoboosted producers?
-    for(int prd_id : mask_to_vector(meta_map[class_id].production_mask)){
+    for(int prd_id : producer_types){
         std::shared_ptr<std::list<std::shared_ptr<Entity>>> possible_producers = currentState.entitymap[prd_id];
         for(std::list<std::shared_ptr<Entity>>::iterator it = possible_producers->begin();it != possible_producers->end();++it){
             //std::cout << meta_map[prd_id].name << " is valid producer for " << meta_map[class_id].name << "\n";
             std::shared_ptr<Entity> producer = *it;
-            if(producer->check_and_occupy()){
-                if(producer->is_worker())currentState.workers_available--;
-                if(meta_map[class_id].producer_destiny == Destiny::freed)producer->make_available(currentState);
-                if(meta_map[class_id].producer_destiny == Destiny::consumed_at_start)possible_producers->erase(it);
+            if((needs_larva(class_id) && producer->decrement_larva(currentState)) 
+                    || (!needs_larva(class_id) && producer->check_and_occupy())){
+                if(producer->is_worker())
+                    currentState.workers_available--;
+                if(meta_map[class_id].producer_destiny == Destiny::freed)
+                    producer->make_available(currentState);
+                if(meta_map[class_id].producer_destiny == Destiny::consumed_at_start && !needs_larva(class_id))
+                    possible_producers->erase(it);
                 currentState.minerals -= meta_map[class_id].minerals;
                 currentState.gas -= meta_map[class_id].gas;
                 currentState.supply_used += meta_map[class_id].supply;
@@ -119,7 +135,10 @@ std::shared_ptr<ProductionEntry> Simulator<gamerace>::check_and_build(int class_
             }
         }
     }
-    throw noProducerAvailableException();
+    if(needs_larva(class_id))
+        throw noLarvaAvailableException();
+    else
+        throw noProducerAvailableException();
     return nullptr;
 }
 
@@ -169,7 +188,7 @@ inline bool Simulator<gamerace>::update_worker_distribution(std::vector<int>& li
     int mins = (int) currentState.minerals;
     if(DEBUG) std::cout << mins << " " << gas << "\n";
     do{
-        if(current_line >= lines.size())return false;
+        if(current_line >= lines.size())break;
         cost_mins += meta_map[lines[current_line]].minerals;
         cost_gas += meta_map[lines[current_line]].gas;
         
@@ -178,8 +197,16 @@ inline bool Simulator<gamerace>::update_worker_distribution(std::vector<int>& li
     }while(mins >= cost_mins && gas >= cost_gas);
     int missing_mins = std::max(0, cost_mins - mins);
     int missing_gas = std::max(0, cost_gas - gas);
-    unsigned int ideal_mineral_worker = currentState.workers_available * 63 * missing_mins/(missing_mins * 63 + missing_gas * 70);
-    unsigned int ideal_gas_worker = currentState.workers_available - ideal_mineral_worker;
+    unsigned int ideal_mineral_worker;
+    unsigned int ideal_gas_worker;
+    if(missing_mins == 0 && missing_gas == 0){
+        ideal_gas_worker = 0;
+        ideal_mineral_worker = currentState.workers_available;
+    }
+    else{
+        ideal_mineral_worker = currentState.workers_available * 63 * missing_mins/(missing_mins * 63 + missing_gas * 70);
+        ideal_gas_worker = currentState.workers_available - ideal_mineral_worker;
+    }
     if(DEBUG) std::cout << ideal_mineral_worker << " " << ideal_gas_worker << "\n";
     unsigned int max_gas_worker = static_cast<unsigned int>(currentState.entitymap[gas_id]->size()*3);
     unsigned int max_mineral_worker = number_of_bases()*16;
@@ -312,6 +339,8 @@ json Simulator<gamerace>::run(std::vector<int> build_list){
                 error_exit("Requirement not fulfilled", output);
                 return output;
             }
+            built = false;
+        }catch(noLarvaAvailableException& e){
             built = false;
         }
         if(built) {

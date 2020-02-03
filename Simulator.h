@@ -48,6 +48,8 @@ private:
 
     unsigned int number_of_bases();
 
+    bool needs_larva(int class_id);
+
     void update_energy();
 
 public:

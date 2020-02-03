@@ -6,6 +6,7 @@
 #include <vector>
 #include <array>
 #include <memory>
+#include "parameters.h"
 //https://thispointer.com/learning-shared_ptr-part-1-usage-details/
 
 
@@ -64,7 +65,8 @@ int main(int argc, char** argv){
             	std::shared_ptr<Entity> a(new Entity(meta_map, 9, 0));
                 entitymap[9]->push_back(a);
             }
-            std::shared_ptr<Entity> hatch(new Entity( meta_map, 0, 0));
+            std::shared_ptr<Entity> hatch(
+                    new Entity( meta_map, 0, 0u - meta_map[name_map["Hatchery"]].build_time - LARVA_START*LARVA_DURATION));
             entitymap[0]->push_back(hatch);
             std::shared_ptr<Entity> ovi(new Entity( meta_map, 16, 0));
             entitymap[16]->push_back(ovi);

@@ -25,6 +25,12 @@ class noProducerAvailableException : public std::exception {
    }
 };
 
+class noLarvaAvailableException : public std::exception {
+    const char * what () const throw () {
+      return "noLarva";
+   }
+};
+
 class requirementNotFulfilledException : public std::exception {
     const char * what () const throw () {
       return "noProducer";
