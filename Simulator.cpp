@@ -1,17 +1,4 @@
 #include "Simulator.h"
-
-// Helper Method
-//turns a bitmask into a vector of those indices of the mask, where the bit is one
-//TODO: for performance improvements, one might buffer theses vectors
-inline std::vector<int> mask_to_vector(unsigned long mask) {
-    std::vector<int> v;
-    for(size_t i = 0;i < 64;++i){
-        if(mask%2 == 1) v.push_back(i);
-        mask = mask>>1;
-    }
-    return v;
-}
-
 // Simulator
 // private object methods
 
@@ -86,7 +73,7 @@ void Simulator<gamerace>::error_exit(std::string message, json& output) {
 
 template<Race gamerace>
 std::shared_ptr<ProductionEntry> Simulator<gamerace>::check_and_build(int class_id){
-    if(class_id == gas_id && currentState.entitymap[class_id]->size() == number_of_bases()*2)throw noGasGeyserAllowedException();
+    if(class_id == gas_id && currentState.entitymap[class_id]->size() == number_of_future_bases()*2)throw noGasGeyserAllowedException();
     if(meta_map[class_id].supply > static_cast<int>(currentState.supply-currentState.supply_used)) throw noSupplyException();
     //bitmask of 0 is interpreted as there not being any requirements, since all entities should be buildable somehow
     if(meta_map[class_id].requirement_mask == 0)goto req_fulfilled;
@@ -163,20 +150,16 @@ inline void Simulator<gamerace>::generate_json_build_start(std::vector<json> &ev
 
 template<Race gamerace>
 inline bool Simulator<gamerace>::update_worker_distribution(std::vector<int>& lines, int current_line) {
-    if(DEBUG)
-        std::cout << "line: "<< current_line << "\n";
+    
     int cost_mins = 0, cost_gas = 0;
     int gas = (int) currentState.gas;
     int mins = (int) currentState.minerals;
-    if(DEBUG)
-        std::cout << mins << " " << gas << "\n";
+    
     do{
         if(current_line >= lines.size())break;
         cost_mins += meta_map[lines[current_line]].minerals;
         cost_gas += meta_map[lines[current_line]].gas;
         
-        if(DEBUG)
-            std::cout << " " << meta_map[lines[current_line]].name << " " << current_line <<" "<<cost_mins << " "<< cost_gas << "\n";
         current_line++;
     }while(mins >= cost_mins && gas >= cost_gas);
     int missing_mins = std::max(0, cost_mins - mins);
@@ -184,8 +167,7 @@ inline bool Simulator<gamerace>::update_worker_distribution(std::vector<int>& li
     unsigned int ideal_mineral_worker = missing_mins + missing_gas == 0 ? currentState.workers_available : 
         currentState.workers_available * 63 * missing_mins/(missing_mins * 63 + missing_gas * 70);
     unsigned int ideal_gas_worker = currentState.workers_available - ideal_mineral_worker;
-    if(DEBUG)
-        std::cout << ideal_mineral_worker << " " << ideal_gas_worker << "\n";
+
     unsigned int max_gas_worker = static_cast<unsigned int>(currentState.entitymap[gas_id]->size()*3);
     unsigned int max_mineral_worker = number_of_bases()*16;
     unsigned int new_gas_worker = std::min(max_gas_worker, ideal_gas_worker);
@@ -194,8 +176,7 @@ inline bool Simulator<gamerace>::update_worker_distribution(std::vector<int>& li
         std::min(new_gas_worker + currentState.workers_available - new_gas_worker - new_mineral_worker, max_gas_worker);
     new_mineral_worker = 
         std::min(new_mineral_worker + currentState.workers_available - new_gas_worker - new_mineral_worker, max_mineral_worker);
-    if(DEBUG)
-        std::cout << new_mineral_worker << " " << new_gas_worker << " new\n";
+    
     if(new_gas_worker != currentState.gas_worker || new_mineral_worker != currentState.mineral_worker){
         currentState.gas_worker = new_gas_worker;
         currentState.mineral_worker = new_mineral_worker;
@@ -210,16 +191,13 @@ inline bool Simulator<gamerace>::worker_distribution_well_defined(){
     int gas = (int) currentState.gas;
     int mins = (int) currentState.minerals;
     auto it = currentState.build_list.begin();
-    if(DEBUG)
-        std::cout << mins << " " << gas << "\n";
+    
     do{
         if(it == currentState.build_list.end())return false;
         int next_entity = *it;
         cost_mins += meta_map[next_entity].minerals;
         cost_gas += meta_map[next_entity].gas;
         
-        if(DEBUG)
-            std::cout << " " << meta_map[next_entity].name << " " << next_entity <<" "<<cost_mins << " "<< cost_gas << "\n";
         ++it;
     }while(mins >= cost_mins && gas >= cost_gas);
     return true;
@@ -231,24 +209,20 @@ inline bool Simulator<gamerace>::update_worker_distribution() {
     int gas = (int) currentState.gas;
     int mins = (int) currentState.minerals;
     auto it = currentState.build_list.begin();
-    if(DEBUG)
-        std::cout << mins << " " << gas << "\n";
+    
     do{
         if(it == currentState.build_list.end())return false;
         int next_entity = *it;
         cost_mins += meta_map[next_entity].minerals;
         cost_gas += meta_map[next_entity].gas;
         
-        if(DEBUG)
-            std::cout << " " << meta_map[next_entity].name << " " << next_entity <<" "<<cost_mins << " "<< cost_gas << "\n";
         ++it;
     }while(mins >= cost_mins && gas >= cost_gas);
     int missing_mins = std::max(0, cost_mins - mins);
     int missing_gas = std::max(0, cost_gas - gas);
     unsigned int ideal_mineral_worker = currentState.workers_available * 63 * missing_mins/(missing_mins * 63 + missing_gas * 70);
     unsigned int ideal_gas_worker = currentState.workers_available - ideal_mineral_worker;
-    if(DEBUG)
-        std::cout << ideal_mineral_worker << " " << ideal_gas_worker << "\n";
+    
     unsigned int max_gas_worker = static_cast<unsigned int>(currentState.entitymap[gas_id]->size()*3);
     unsigned int max_mineral_worker = number_of_bases()*16;
     unsigned int new_gas_worker = std::min(max_gas_worker, ideal_gas_worker);
@@ -257,8 +231,7 @@ inline bool Simulator<gamerace>::update_worker_distribution() {
         std::min(new_gas_worker + currentState.workers_available - new_gas_worker - new_mineral_worker, max_gas_worker);
     new_mineral_worker = 
         std::min(new_mineral_worker + currentState.workers_available - new_gas_worker - new_mineral_worker, max_mineral_worker);
-    if(DEBUG)
-        std::cout << new_mineral_worker << " " << new_gas_worker << " new\n";
+    
     if(new_gas_worker != currentState.gas_worker || new_mineral_worker != currentState.mineral_worker){
         currentState.gas_worker = new_gas_worker;
         currentState.mineral_worker = new_mineral_worker;
@@ -281,6 +254,17 @@ unsigned int Simulator<gamerace>::number_of_bases(){
 }
 
 template<Race gamerace>
+unsigned int Simulator<gamerace>::number_of_future_bases(){
+    unsigned int sum = 0;
+    for(unsigned int id : base_ids){
+        //std::cout << meta_map[id].name << "exists " << currentState.entitymap[id]->size() << " many times\n";
+        sum += currentState.entity_count[id];
+    }
+    //std::cout << "total number of bases: " << sum << "\n";
+    return sum;
+}
+
+template<Race gamerace>
 void Simulator<gamerace>::update_energy(){
     for(std::shared_ptr<Entity> special_unit : *currentState.entitymap[super_id]){
         special_unit->updateEnergy();
@@ -290,12 +274,12 @@ void Simulator<gamerace>::update_energy(){
 // Simulator
 // public object methods
 template<Race gamerace>
-std::list<std::shared_ptr<Entity>> Simulator<gamerace>::get_chrono_targets(){
-    std::list<std::shared_ptr<Entity>> targets;
+std::vector<std::pair<int, int>> Simulator<gamerace>::get_chrono_targets(){
+    std::vector<std::pair<int, int>> targets;
     for(unsigned int building_id : building_ids){
         for(auto building : *currentState.entitymap[building_id]){
             if(!building->is_chrono_boosted(currentState)){
-                targets.push_back(building);
+                targets.push_back({building_id, building->obj_id});
             }
         }
     }
@@ -343,7 +327,8 @@ std::array<int, 64> Simulator<gamerace>::getOptions(){
         if((meta.gas == 0 || currentState.gas_geysers_available > 0)
                 && (meta.supply <= currentState.final_supply)
                 && req_fulfilled
-                && producer_available)
+                && producer_available
+                && (i != gas_id || currentState.gas_geysers_available < number_of_future_bases()*2))
         {
             result_list[j++] = i;
         }
@@ -353,13 +338,16 @@ std::array<int, 64> Simulator<gamerace>::getOptions(){
 }
 
 template<Race gamerace>
-void Simulator<gamerace>::step(int entity_id, std::shared_ptr<Entity> target, std::shared_ptr<Entity> caster){
+void Simulator<gamerace>::step(int entity_id, int cast_target_class_id, int cast_target_obj_id){
     currentState.time_tick++;
     if(entity_id > -1){
         if(entity_id == gas_id)currentState.gas_geysers_available++;
         currentState.final_supply = currentState.final_supply - meta_map[entity_id].supply + meta_map[entity_id].supply_provided;
         currentState.entity_count[entity_id]++;
         currentState.build_list.push_back(entity_id);
+        if(meta_map[entity_id].producer_destiny == Destiny::consumed_at_end || meta_map[entity_id].producer_destiny == Destiny::consumed_at_start){
+            currentState.entity_count[mask_to_vector(meta_map[entity_id].production_mask).front()]--;
+        }
     }
 
     if(DEBUG) std::cout << "  time: " << currentState.time_tick << "\n";
@@ -371,29 +359,34 @@ void Simulator<gamerace>::step(int entity_id, std::shared_ptr<Entity> target, st
 
 
     //Check finished buildings
-    std::list <std::shared_ptr<ProductionEntry>> finished_list = process_production_list();
+    std::list<std::shared_ptr<ProductionEntry>> finished_list = process_production_list();
     /*if (!finished_list.empty()){
         generate_json = true;
         generate_json_build_end(events, finished_list);
     }*/
 
     //Start new buildings
-    int next_entity = currentState.build_list.front();
 
-    std::shared_ptr<ProductionEntry> entry;
-    if(gamerace == Race::Protoss && target){
-        caster->cast_if_possible();
-        target->chrono_boost(currentState);
-        for(std::shared_ptr<ProductionEntry> entry : target->producees){
-            entry->chrono_boost(currentState, target->get_chrono_until());
+    std::shared_ptr<ProductionEntry> entry = nullptr;
+    if(gamerace == Race::Protoss && cast_target_class_id >= 0){
+        std::shared_ptr<Entity> target;
+        for(auto& potential_target : *currentState.entitymap[cast_target_class_id]){
+            if(potential_target->obj_id == cast_target_obj_id)target = potential_target;
+        }
+        if(target){
+            get_caster()->cast_if_possible();
+            target->chrono_boost(currentState);
+            for(std::shared_ptr<ProductionEntry>& entry : target->producees){
+                entry->chrono_boost(currentState, target->get_chrono_until());
+            }
         }
             
         //special_event["name"] = "chronoboost";
         //special_event["targetBuilding"] = currentState.entitymap[0]->front()->id();
     }
-    else{
+    else if(!currentState.build_list.empty()){
         try{
-            entry = check_and_build(next_entity);
+            entry = check_and_build(currentState.build_list.front());
             currentState.build_list.erase(currentState.build_list.begin());
             currentState.built = true;
         }catch(noMineralsException& e){
@@ -413,13 +406,13 @@ void Simulator<gamerace>::step(int entity_id, std::shared_ptr<Entity> target, st
             currentState.built = false;
         }
     }
-    if(currentState.built) {
+    if(entry) {
         currentState.production_list.push_back(entry);
         //generate_json = true;
         //generate_json_build_start(events, entry);
     }
     else if(gamerace != Race::Protoss){
-        for(std::shared_ptr<Entity> specialunit : *currentState.entitymap[super_id]){
+        for(std::shared_ptr<Entity>& specialunit : *currentState.entitymap[super_id]){
             if(specialunit->cast_if_possible()){
                 //generate_json = true;
                 //json special_event;
@@ -461,7 +454,6 @@ template<Race gamerace>
 json Simulator<gamerace>::run(std::vector<int> build_list){
 	if(DEBUG)
 		std::cout << "Init Simulator";
-    currentState = initialState;
 
     currentState.built = true;
     bool generate_json;

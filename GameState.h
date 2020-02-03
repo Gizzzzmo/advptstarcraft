@@ -38,6 +38,7 @@ public:
                 }
             };
     GameState(const GameState& state);
+    ~GameState();
     GameState& operator=(const GameState& state);
     friend std::ostream &operator<<(std::ostream  &outstream, GameState& state);
     unsigned int time_tick;

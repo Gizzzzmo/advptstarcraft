@@ -24,10 +24,8 @@ GameState::GameState(const GameState& state) :
             entitymap[i] = list;
             for(auto entity : *state.entitymap[i]){
                 std::shared_ptr<Entity> copied_entity(new Entity(*entity));
-                std::cout << "init use count of entity " << copied_entity->id() << ": " << copied_entity.use_count() << "\n";
                 entitymap[i]->push_back(copied_entity);
                 entity_translation_map[entity] = copied_entity;
-                std::cout << "after adding to list and translation use count of entity " << copied_entity->id() << ": " << copied_entity.use_count() << "\n";
             }
         }
 
@@ -39,22 +37,19 @@ GameState::GameState(const GameState& state) :
         }
         for(int i = 0;i < 64;i++){
             for(auto& entity : *entitymap[i]){
-                std::cout << "copying " << entity->id() << "'s ("<< entity->producees.size() <<") prod entry references:\n";
                 for(auto it = entity->producees.begin(); it != entity->producees.end();++it){
-                    std::cout << "  original producee: " << (*it)->producee->id() << ", use count: " << (*it).use_count() << "\n";
                     std::shared_ptr<ProductionEntry> new_entry = entry_translation_map[*it];
-                    std::cout << "  new producee: " << new_entry->producee->id() << ", use count: " << new_entry.use_count() << "\n";
                     it = entity->producees.insert(entity->producees.erase(it), new_entry);
-                    std::cout << "  original producee after erasure: " << (*it)->producee->id() << ", use count: " << (*it).use_count() << "\n";
-                }
-                std::cout << "  resulting producees:\n";
-                for(auto& entry: entity->producees){
-                    std::cout << "    " << entry->producee->id() << "\n";
                 }
             }
         }
 }
 
+GameState::~GameState(){
+    for(auto& entry: production_list){
+        entry->producer = nullptr;
+    }
+}
 
 std::ostream& operator<<(std::ostream  &outstream, GameState& state){
     outstream << "time: " << state.time_tick <<
@@ -88,7 +83,7 @@ GameState& GameState::operator=(const GameState& state){
         final_supply = state.final_supply;
         entity_count = state.entity_count;
         built = state.built;
-
+        
         std::map<std::shared_ptr<Entity>, std::shared_ptr<Entity>> entity_translation_map;
         for(int i = 0;i < 64;i++){
             entitymap[i]->clear();
@@ -100,6 +95,9 @@ GameState& GameState::operator=(const GameState& state){
         }
         std::map<std::shared_ptr<ProductionEntry>, std::shared_ptr<ProductionEntry>> entry_translation_map;
         
+        for(auto& entry: production_list){
+            entry->producer = nullptr;
+        }
         production_list.clear();
         for(auto& entry : state.production_list){
             std::shared_ptr<ProductionEntry> copied_entry(new ProductionEntry(*entry, entity_translation_map));

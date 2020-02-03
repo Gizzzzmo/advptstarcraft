@@ -7,6 +7,7 @@ using json = nlohmann::json;
 #include <iostream>
 #include <algorithm>
 #include <memory>
+#include <utility>
 
 #include "ProductionEntry.h"
 #include "Entity.h"
@@ -18,6 +19,17 @@ using json = nlohmann::json;
 #else
 #define DEBUG 1
 #endif
+// Helper Method
+//turns a bitmask into a vector of those indices of the mask, where the bit is one
+//TODO: for performance improvements, one might buffer theses vectors
+inline std::vector<int> mask_to_vector(unsigned long mask) {
+    std::vector<int> v;
+    for(size_t i = 0;i < 64;++i){
+        if(mask%2 == 1) v.push_back(i);
+        mask = mask>>1;
+    }
+    return v;
+}
 
 template<Race gamerace>
 class Simulator{
@@ -48,6 +60,8 @@ private:
 
     inline bool update_worker_distribution();
 
+    unsigned int number_of_future_bases();
+
     unsigned int number_of_bases();
 
     void update_energy();
@@ -68,13 +82,13 @@ Simulator(const std::array<EntityMeta, 64>& meta_map,
     std::shared_ptr<Entity> get_caster();
     //If someone can cast, return caster, else nullptr
 
-    std::list<std::shared_ptr<Entity>> get_chrono_targets();
+    std::vector<std::pair<int, int>> get_chrono_targets();
     //Protoss -> Buildings that can produce something
 
     std::array<int, 64> getOptions();
     //Possible entities
 
-    void step(int entity_id, std::shared_ptr<Entity> target, std::shared_ptr<Entity> caster);
+    void step(int entity_id, int cast_target_class_id, int cast_target_obj_id);
 //Propagates game one time step
 
     inline bool worker_distribution_well_defined();

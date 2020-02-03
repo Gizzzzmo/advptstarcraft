@@ -1,28 +1,272 @@
 #include "Simulator.h"
+#include "Entity.h"
 #include "Action.h"
+#include "Node.h"
 
 #include <string>
 #include <iostream>
 #include <map>
 #include <array>
+#include <cstdlib>
+#include <chrono>
+#include <cmath>
 
 enum Scenario{Rush, Push};
 
+std::array<EntityMeta, 64> meta_map;
+
+int gas_id;
+int worker_id;
 int target_id;
+std::vector<unsigned int> base_ids;
+std::vector<unsigned int> building_ids = {};
+int super_id;
 int best_score;
 int leaf_qualifier;
+std::array<bool, 64> requirements;
+std::array<bool, 64> producers;
+bool gas_required = false;
 std::list<Action> best_build;
 long nodes_visited = 0;
 std::vector<std::shared_ptr<Entity>> test;
+std::vector<std::shared_ptr<ProductionEntry>> test1;
 
+template<Scenario scenario, Race gamerace>
+bool is_option_viable(int option_id, GameState& state){
+    if(option_id == gas_id)return gas_required || target_id == gas_id;
+    if(option_id == -1)return true;
+    if(scenario == Scenario::Push){
+        if(1 + state.time_tick + meta_map[option_id].build_time * (gamerace == Race::Protoss ? 2 : 3) / 3 > leaf_qualifier)return false;
+    }
+    int bases = 0;
+    for(int base_id : base_ids){
+        bases += state.entity_count[base_id];
+    }
+    if(option_id == 0)return bases < 5;
+    int max_workers = bases * 16;
+    max_workers += state.entity_count[gas_id] * 3;
+    if(option_id == worker_id && state.entity_count[worker_id] > max_workers + 10)return false;
+    if(option_id == target_id ||
+        option_id == worker_id  ||
+        (meta_map[option_id].supply_provided > 0 && state.final_supply < 14))
+        return true;
+    EntityMeta& option = meta_map[option_id];
+    EntityMeta& target = meta_map[target_id];
+    int num_of_producers = 0;
+    for(int prd : mask_to_vector(target.production_mask)){
+        num_of_producers += state.entity_count[prd] * meta_map[prd].units_produced;
+    }
+    if(producers[option_id] && 
+        (scenario != Scenario::Rush || (leaf_qualifier > num_of_producers && leaf_qualifier > state.entity_count[option_id])))
+        return true;
+    if(requirements[option_id] && state.entity_count[option_id] < 1)return true;
 
+    return false;
+}
+
+template<Scenario scenario, Race gamerace>
+int random_play_through(Simulator<gamerace>& sim, int leaf_qualifier){
+    GameState& currentState = sim.currentState;
+    while(true){
+        if (scenario == Scenario::Push) {
+            if(sim.currentState.time_tick >= leaf_qualifier){
+                break;
+            }
+        }
+        else if(scenario == Scenario::Rush){
+            if(sim.currentState.entitymap[target_id]->size() >= leaf_qualifier){
+                break;
+            }
+        }
+
+        //std::cout << "time " << currentState.time_tick<<", options:\n";
+        std::shared_ptr<Entity> caster = gamerace == Race::Protoss ? sim.get_caster() : nullptr;
+        std::array<int, 64> options = {-1};
+        if(!sim.worker_distribution_well_defined() && 
+            (scenario != Scenario::Rush || currentState.entity_count[target_id] < leaf_qualifier)){
+            options = sim.getOptions();
+        }
+
+        std::vector<int> viable_options;
+        std::vector<double> weights;
+        for(int option : options){
+            if(is_option_viable<scenario, gamerace>(option, currentState)){
+                viable_options.push_back(option);
+                weights.push_back(1);
+            }
+            if(option == -1)break;
+        }
+        double sum = weights.size();
+        //weigh options
+        double r;
+        double untilnow;
+        
+        int chosen_target_class = -1;
+        int chosen_target_id = -1;
+        if(caster){
+            std::vector<std::pair<int, int>> possible_targets = sim.get_chrono_targets();
+            r = (possible_targets.size()+1) * ((double) std::rand() / (RAND_MAX));
+            for(std::pair<int, int> possible_target : possible_targets){
+                untilnow +=1;
+                if(r <= untilnow){
+                    chosen_target_class = possible_target.first;
+                    chosen_target_id = possible_target.second;
+                }
+            }
+        }
+
+        r = sum * ((double) std::rand() / (RAND_MAX));
+        untilnow = 0;
+        int chosen_option = -1;
+        if(chosen_target_class == -1 && weights.size() > 1)weights[weights.size()-2] += weights.back();
+        for(int i = 0;i < viable_options.size();i++){
+            untilnow += weights[i];
+            if(r <= untilnow){
+                chosen_option = viable_options[i];
+                break;
+            }
+        }
+        if(chosen_target_class != -1 || chosen_option != -1)sim.step(chosen_option, chosen_target_class, chosen_target_id);
+        else{
+            sim.step(-1, -1, -1);
+        }
+    }
+    if(scenario == Scenario::Rush)return currentState.time_tick;
+    else return currentState.entitymap[target_id]->size();
+}
+
+template<Scenario scenario, Race gamerace>
+int mcts(Simulator<gamerace>& sim){
+    Node* startNode = new Node{nullptr, {}, {-1, -1, -1}, 0, 0};
+    GameState rootState = sim.currentState;
+    Node& currentRoot = *startNode;
+
+    int k = 0;
+    while(true){
+        k++;
+        Node& currentNode = currentRoot;
+        std::cout <<"selection " << k << ", time " << rootState.time_tick<< ", looking for next move:\n";
+        for(int i = 0;i < 50;i++){
+            currentNode = currentRoot;
+            std::cout << "  starting iteration number " << i <<", searching for leaf:\n";
+            if(currentNode.visits == -1)break;
+            while(currentNode.visits > 0){
+                currentNode.visits++;
+                double max_ucb = 0;
+                double maxScore = 0;
+                bool nonleaf_found = false;
+                std::cout << "    " << &currentNode << " "<< currentNode.visits <<"\n";
+                std::cout << "    number of possible children: " << currentNode.children.size() << "\n";
+                for(Node* child_ptr : currentNode.children){
+                    Node& child = *child_ptr;
+                    if(child.visits != -1)nonleaf_found = true;
+                    if(child.avg_score > maxScore)maxScore = child.avg_score;
+                }
+                if(!nonleaf_found){
+                    currentNode.visits = -1;
+                    currentNode.avg_score = maxScore;
+                    break;
+                }
+                if(maxScore == 0)maxScore = 1;
+                Node* next_node = nullptr;
+                for(Node* child_ptr : currentNode.children){
+                    Node& child = *child_ptr;
+                    std::cout << "      " << &currentNode << " " << currentNode.visits<<"\n";
+                    double ucb = child.avg_score/maxScore + std::sqrt(std::log(currentNode.visits)/std::max((double)child.visits, 0.1));
+                    std::cout << "      child " << &child << ", visits : " << child.visits << ", ucb: " << ucb << "\n";
+                    if(ucb > max_ucb){
+                        max_ucb = ucb;
+                        next_node = child_ptr;
+                    }
+                }
+                currentNode = *next_node;
+                std::cout << "    selected move " << currentNode.action.entity_to_be_built_id << ", with ucb " << max_ucb <<"\n";
+                if(currentNode.visits != -1)
+                    sim.step(currentNode.action.entity_to_be_built_id,
+                        currentNode.action.chrono_target_class,
+                        currentNode.action.chrono_target_id);
+            }
+            currentNode.visits++;
+            std::cout << "  found leaf, checking if actual game leaf:\n";
+            double score = 0;
+            if(currentNode.visits == -1)score = currentNode.avg_score;
+            else{
+                std::shared_ptr<Entity> caster = sim.get_caster();
+                if((scenario == Scenario::Push && sim.currentState.time_tick == leaf_qualifier)
+                    || scenario == Scenario::Rush && sim.currentState.entitymap[target_id]->size() == leaf_qualifier){
+                    score = scenario == Scenario::Push ? sim.currentState.entitymap[target_id]->size()
+                                                        : 1/((double)sim.currentState.time_tick + 1);
+                    currentNode.visits = -1;
+                    std::cout << "  yes! setting score " << score <<"\n";
+                }
+                else{
+                    std::cout << "  no, expanding leaf, new leaves:\n";
+                    std::array<int, 64> options = {-1};
+                    if(!sim.worker_distribution_well_defined())options = sim.getOptions();
+                    for(int option : options){
+                        std::cout << "    is viable? " << option << "\n";
+                        if(is_option_viable<scenario, gamerace>(option, sim.currentState)){
+                            if(caster){
+                                std::vector<std::pair<int, int>> targets = sim.get_chrono_targets();
+                                for(std::pair<int, int>& target : targets){
+                                    std::cout << "    " << option << ", " << target.first << " " << target.second << "\n";
+                                    currentNode.children.push_back(new Node{&currentNode, {}, {option, target.first, target.second}, 0, 0});
+                                }
+                            }
+                            std::cout << "    " << option << ", " << -1 << " " << -1 << "\n";
+                            currentNode.children.push_back(new Node{&currentNode, {}, {option, -1, -1}, 0, 0});
+                        }
+                        if(option == -1)break;
+                    }
+                    std::cout << "  doing random playouts:\n";
+                    for(int i = 0;i < 5;i++){
+                        double ss = random_play_through<scenario, gamerace>(sim, leaf_qualifier);
+                        std::cout << "    score: " << ss << "\n";
+                        score += ss;
+                    }
+                    score /= 5;
+                    std::cout << "  average score: " << score << "\n";
+                    if(scenario == Scenario::Rush)score +=1;
+                }
+                if(scenario == Scenario::Rush)score = 1/score;
+            }
+            std::cout << "  backpropagating:\n";
+            Node* parent = &currentNode;
+            while(parent != &currentRoot){
+                std::cout << "    " << parent << " " << &currentRoot << "\n";
+                currentNode.avg_score = (currentNode.avg_score*currentNode.visits + score)/(currentNode.visits+1);
+                parent = currentNode.parent;
+            }
+            sim.currentState = rootState;
+        }
+        std::cout << "selecting child with best score:\n";
+        double max_score = 0;
+        for(Node* child_ptr : currentRoot.children){
+            Node& child = *child_ptr;
+            if(child.avg_score > max_score){
+                max_score = child.avg_score;
+                currentRoot = child;
+            }
+        }
+        std::cout << "selected move " << currentRoot.action.entity_to_be_built_id << " with score " << max_score << "\n";
+
+        sim.step(currentRoot.action.entity_to_be_built_id,
+            currentRoot.action.chrono_target_class,
+            currentRoot.action.chrono_target_id);
+        if((scenario == Scenario::Push && sim.currentState.time_tick == leaf_qualifier)
+            || scenario == Scenario::Rush && sim.currentState.entitymap[target_id]->size() == leaf_qualifier){
+            return scenario == Scenario::Push ? sim.currentState.entitymap[target_id]->size()
+                                                : sim.currentState.time_tick;
+        }
+        rootState = sim.currentState;
+    }
+}
 
 template<Scenario scenario, Race gamerace>
 void dfs(Simulator<gamerace>& sim, std::list<Action>& build){
-    std::cout << "nodes visited: " << nodes_visited++ << "\n";
+    if(nodes_visited++ % 100 == 0)std::cout << "nodes visited: " << nodes_visited << "\n";
     if (scenario == Scenario::Push) {
-        if(sim.currentState.time_tick == leaf_qualifier){
-            std::cout << sim.currentState.time_tick << ", score:" << sim.currentState.entitymap[target_id]->size() << "\n";
+        if(sim.currentState.time_tick >= leaf_qualifier){
             if(sim.currentState.entitymap[target_id]->size() > best_score){
                 best_score = sim.currentState.entitymap[target_id]->size();
                 best_build = build;
@@ -31,7 +275,7 @@ void dfs(Simulator<gamerace>& sim, std::list<Action>& build){
         }
     }
     else if(scenario == Scenario::Rush){
-        if(sim.currentState.entity_count[target_id] == leaf_qualifier){
+        if(sim.currentState.entitymap[target_id]->size() >= leaf_qualifier){
             if(sim.currentState.time_tick < best_score){
                 best_score = sim.currentState.time_tick;
                 best_build = build;
@@ -40,111 +284,141 @@ void dfs(Simulator<gamerace>& sim, std::list<Action>& build){
         }
     }
 
-    std::shared_ptr<Entity> caster = gamerace == Race::Protoss ? sim.get_caster() : nullptr;
     GameState currentState(sim.currentState);
-    for(int i = 0;i < 64;i++){
-        for(auto& entry : *currentState.entitymap[i]){
-            std::cout << "use coutn of " << entry->id() << " afterwards: " << entry.use_count() << "\n";
-            test.push_back(entry);
-        }
-    }
+    std::shared_ptr<Entity> caster = gamerace == Race::Protoss ? sim.get_caster() : nullptr;
     std::array<int, 64> options = {-1};
-    if(!sim.worker_distribution_well_defined())options = sim.getOptions();
+    if(!sim.worker_distribution_well_defined() && 
+        (scenario != Scenario::Rush || currentState.entity_count[target_id] < leaf_qualifier))options = sim.getOptions();
 
-    std::cout << sim.currentState << "\n";
+    //std::cout << sim.currentState << "\n";
     //while(sim.worker_distribution_well_defined()) {
     //	GameState currentState = sim.currentState;
         //Cast options
     //}
     bool something_happened = false;
-
+    /*std::cout << "current build:\n";
+    for(Action& a : build){
+        std::cout << "  " <<a.entity_to_be_built_id << ", " << a.chrono_target_class << "\n";
+    }
+    std::cout << "options:\n";
+    for(int op : options){
+        std::cout << "  " << op << "\n";
+        if(op == -1)break;
+    }*/
     //Build options
     for(int ent_id : options) {
-        if(caster) {
-            std::list<std::shared_ptr<Entity>> targets = sim.get_chrono_targets();
-            for(std::shared_ptr<Entity> target : targets) {
-                something_happened = true;
-                sim.currentState = currentState;
-                for(int i = 0;i < 64;i++){
-                    for(auto& entity : *sim.currentState.entitymap[i]){
-                        std::cout << " use count of entity "<< entity->id() << " "<< entity.use_count() << "\n";
-                        for(auto& entry : entity->producees){
-                            std::cout << "  use count of associated production entry " << entry->producee->id() << " " << entry.use_count() << "\n";
-                        }
-                    }
-                }
-                for(auto& entry : sim.currentState.production_list){
-                    std::cout << " use count of production entry" << entry->producee->id() << " " << entry.use_count() << "\n";
-                }
-                sim.step(ent_id, target, caster);
-                build.push_back({ent_id, target->obj_id});
-                dfs<scenario>(sim, build);
-                build.pop_back();
-            }
-        }
-        if(ent_id == -1)break;
+        /*std::cout << "trying option " << ent_id << "\n";
+        std::cout << "is viable: " << is_option_viable<scenario, gamerace>(ent_id, currentState) << "\n";*/
+        if(is_option_viable<scenario, gamerace>(ent_id, currentState)){
+            if(caster) {
+                std::vector<std::pair<int, int>> targets = sim.get_chrono_targets();
+                for(std::pair<int, int>& target : targets) {
+                    something_happened = true;
+                    sim.currentState = currentState;
+                    sim.step(ent_id, target.first, target.second);
 
-        something_happened = true;
-
-        sim.currentState = currentState;
-        for(int i = 0;i < 64;i++){
-            for(auto& entity : *sim.currentState.entitymap[i]){
-                std::cout << " use count of entity "<< entity->id() << " "<< entity.use_count() << "\n";
+                    build.push_back({ent_id, target.first, target.second});
+                    dfs<scenario>(sim, build);
+                    build.pop_back();
+                }
             }
+            if(ent_id == -1)break;
+
+            something_happened = true;
+
+            sim.currentState = currentState;
+            sim.step(ent_id, -1, -1);
+            build.push_back({ent_id, -1});
+            dfs<scenario>(sim, build);
+            build.pop_back();
         }
-        for(auto& entry : sim.currentState.production_list){
-            std::cout << " use count of production entry " << entry->producee->id() << " " << entry.use_count() << "\n";
-            std::cout << "  and of producer " << entry->producer->id() << " ??? " << entry->producer.use_count() << "\n";
-        }
-        sim.step(ent_id, nullptr, caster);
-        build.push_back({ent_id, -1});
-        dfs<scenario>(sim, build);
-        build.pop_back();
     }
 
     //Cast options
-    if(!something_happened) {
-        sim.step(-1, nullptr, nullptr);
+    if(!something_happened && (sim.worker_distribution_well_defined() || sim.currentState.entity_count[target_id] == leaf_qualifier || scenario == Scenario::Push)) {
+        do{
+            sim.step(-1, -1, -1);
+            if(scenario == Scenario::Push && sim.currentState.time_tick == leaf_qualifier)break;
+            if(scenario == Scenario::Rush && sim.currentState.entitymap[target_id]->size() == leaf_qualifier)break;
+        }
+        while((sim.worker_distribution_well_defined() || sim.currentState.entity_count[target_id] == leaf_qualifier) && sim.get_caster() == nullptr);
         dfs<scenario>(sim, build);
     }
-    
+    else return;
+}
+
+template<Race gamerace>
+void construct_producers(int entity_id);
+
+template<Race gamerace>
+void construct_requirements(int entity_id){
+    const EntityMeta& info = meta_map[entity_id];
+    if(info.gas > 0)gas_required = true;
+    if(info.requirement_mask == 0)return;
+    for(int req : mask_to_vector(info.requirement_mask)){
+        if(requirements[req] || 
+            (gamerace == Race::Terran && 
+                (req == 12 || req == 16 || req == 21 || req == 20 || req == 32 || req == 33)))
+            continue;
+        requirements[req] = true;
+        construct_requirements<gamerace>(req);
+        construct_producers<gamerace>(req);
+        requirements[req] = true;
+    }
+}
+
+template<Race gamerace>
+void construct_producers(int entity_id){
+    const EntityMeta& info = meta_map[entity_id];
+    if(info.gas > 0)gas_required = true;
+    for(int prd : mask_to_vector(info.production_mask)){
+        if(producers[prd])continue;
+        producers[prd] = true;
+        construct_producers<gamerace>(prd);
+        construct_requirements<gamerace>(prd);
+        producers[prd] = true;
+    }
 }
 
 template<Race gamerace, Scenario scenario>
-void optimize(const std::array<EntityMeta, 64>& meta_map,
-    const GameState& initialState,
-    const int gas_id,
-    const int worker_id,
-    const std::vector<unsigned int>& base_ids,
-    const std::vector<unsigned int>& building_ids,
-    const int super_id)
+void optimize(const GameState& initialState)
 {
     Simulator<gamerace> sim(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id);
     if(scenario == Scenario::Push)best_score = 0;
     else best_score = 1001;
     std::list<Action> empty_build = {};
-    dfs<scenario>(sim, empty_build);
+    requirements.fill(false);
+    producers.fill(false);
+    construct_requirements<gamerace>(target_id);
+    construct_producers<gamerace>(target_id);
 
-    std::cout << "best score: " << best_score << "\n";
+    if(gamerace == Race::Terran){
+        if(target_id != 2 && target_id != 5 && target_id != 18){
+            requirements[3] = false;//engineering bay is only ever required when targeting either a turret, planetary, or sensor tower
+        }
+        requirements[2] = false;
+        producers[2] = false;
+        producers[3] = false;
+    }
+    std::chrono::milliseconds ms = std::chrono::duration_cast< std::chrono::milliseconds >(
+        std::chrono::system_clock::now().time_since_epoch()
+    );
+    std::srand(ms.count());
+    best_score = mcts<scenario>(sim);
+    double score = 0;
+    for(int i = 0;i < 100;i++){
+        double ss = random_play_through<scenario>(sim, leaf_qualifier);
+        //std::cout << " " << ss << "\n";
+        score += ss;
+        sim.currentState = initialState;
+    }
+    std::cout << score/100 <<" ???\n";
 
-    for(auto& entry : test){
-        if(entry.use_count() > 1)std::cout << "blub " << entry << ": " << entry->id() << ", use count: " << entry.use_count() <<"\n";
+    std::cout << "best score: " << best_score << "\n with build:\n";
+    for(Action& a : best_build){
+        std::cout << a.entity_to_be_built_id << ", chrono target: " << a.chrono_target_id << "\n";
     }
 
-    /*
-    std::cout << sim.currentState << "\n";
-    std::array<int, 64> options = sim.getOptions();
-    for(int i = 0;i < 64;i++){
-        std::cout << "option: " << options[i] << "\n";
-        if(options[i] == -1)break;
-        std::cout << "        " << meta_map[options[i]].name << "\n";
-    }
-    sim.step(0, nullptr, nullptr);
-    std::cout << sim.currentState << "\n";
-    while(sim.worker_distribution_well_defined()){
-        sim.step(-1, nullptr, nullptr);
-        std::cout << sim.currentState << "\n";
-    }*/
 }
 
 int main(int argc, char** argv){
@@ -152,15 +426,9 @@ int main(int argc, char** argv){
 
     leaf_qualifier = std::stoi(argv[3]);
     Race gamerace;
-    std::array<EntityMeta, 64> meta_map;
     std::map<std::string, int> name_map;
 
-    int worker_id;
-    int gas_id;
-    int super_id;
     unsigned int supply = 15;
-    std::vector<unsigned int> base_ids;
-    std::vector<unsigned int> building_ids = {};
 
     //keep in mind minerals and gas are in hundredths
     std::array<std::shared_ptr<std::list<std::shared_ptr<Entity>>>, 64> entitymap;
@@ -225,31 +493,31 @@ int main(int argc, char** argv){
     }
 
     target_id = name_map[target_unit];
-    const GameState initialState(0, 5000, 0, supply, 12, 12, 12, 0, 0, 12, true, entitymap, {}, {});
+    const GameState initialState(0, 5000, 0, supply, 12, 12, 12, 0, 0, 3, true, entitymap, {}, {});
 
     switch(gamerace){
         case Protoss:
             if(!scenario.compare("rush")){
-                optimize<Race::Protoss, Scenario::Rush>(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id);
+                optimize<Race::Protoss, Scenario::Rush>(initialState);
             }
             else if(!scenario.compare("push")){
-                optimize<Race::Protoss, Scenario::Push>(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id);
+                optimize<Race::Protoss, Scenario::Push>(initialState);
             }
             break;
         case Terran:
             if(!scenario.compare("rush")){
-                optimize<Race::Terran, Scenario::Rush>(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id);
+                optimize<Race::Terran, Scenario::Rush>(initialState);
             }
             else if(!scenario.compare("push")){
-                optimize<Race::Terran, Scenario::Push>(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id);
+                optimize<Race::Terran, Scenario::Push>(initialState);
             }
             break;
         case Zerg:
             if(!scenario.compare("rush")){
-                optimize<Race::Zerg, Scenario::Rush>(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id);
+                optimize<Race::Zerg, Scenario::Rush>(initialState);
             }
             else if(!scenario.compare("push")){
-                optimize<Race::Zerg, Scenario::Push>(meta_map, initialState, gas_id, worker_id, base_ids, building_ids, super_id);
+                optimize<Race::Zerg, Scenario::Push>(initialState);
             }
             break;
     }
