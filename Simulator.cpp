@@ -94,7 +94,9 @@ bool Simulator<gamerace>::is_zergling(int class_id){
 template<Race gamerace>
 void Simulator<gamerace>::error_exit(std::string message, json& output) {
     output["buildlistValid"] = 0;
-    std::cerr << message << "\n";
+    if(DEBUG){
+        std::cerr << message << "\n";
+    }
 }
 
 template<Race gamerace>
@@ -368,7 +370,6 @@ json Simulator<gamerace>::run(std::vector<int> build_list){
         else{
             for(std::shared_ptr<Entity> specialunit : *currentState.entitymap[super_id]){
                 if(specialunit->cast_if_possible()){
-                    generate_json = true;
                     json special_event;
                     special_event["type"] = "special";
                     special_event["triggeredBy"] = specialunit->id();
@@ -380,8 +381,22 @@ json Simulator<gamerace>::run(std::vector<int> build_list){
                             }
                         	currentState.timeout_mule.insert(currentState.timeout_mule.end(), currentState.time_tick + 64);
                             special_event["name"] = "mule";
+                            generate_json = true;
                         break;
                         case Zerg:
+                            for(int i : base_ids){
+                                for(std::shared_ptr<Entity> base : *currentState.entitymap[i]){
+                                    if(base->inject_larva(currentState)){
+                                        special_event["targetBuilding"] = base->id();
+                                        special_event["name"] = "injectlarvae";
+                                        generate_json = true;
+                                        goto injected;
+                                    }
+                                }
+                            }
+                            // Couldn't actually cast. Undo it.
+                            specialunit->undo_cast();
+                            injected:
                         break;
                         case Protoss:
                             std::shared_ptr<Entity> target = currentState.entitymap[0]->front();
@@ -391,6 +406,7 @@ json Simulator<gamerace>::run(std::vector<int> build_list){
                             }
                             special_event["name"] = "chronoboost";
                             special_event["targetBuilding"] = currentState.entitymap[0]->front()->id();
+                            generate_json = true;
                         break;
                     }
                     events.push_back(special_event);

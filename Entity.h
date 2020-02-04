@@ -130,6 +130,8 @@ public:
 
     bool cast_if_possible();
     
+    void undo_cast();
+
     // use only for occupied producers
     void make_available(GameState& state);
 };

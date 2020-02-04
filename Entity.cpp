@@ -112,6 +112,10 @@ bool Entity::cast_if_possible(){
     return false;
 }
 
+void Entity::undo_cast(){
+    energy += ability_cost();
+}
+
 // use only for occupied producers
 void Entity::make_available(GameState& state){
     if(is_worker())state.workers_available++;
