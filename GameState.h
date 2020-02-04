@@ -15,7 +15,7 @@ typedef struct GameState{
 private:
 
 public:
-    GameState(uint time_tick, uint minerals, uint gas, uint supply, uint supply_used, uint workers_available, uint mineral_worker, uint gas_worker, int gas_geysers_available, int final_supply, bool built,
+    GameState(uint time_tick, uint minerals, uint gas, uint supply, uint supply_used, uint workers_available, uint mineral_worker, uint gas_worker, int gas_geysers_available, int final_supply, bool built, uint max_id,
         std::array<std::shared_ptr<std::list<std::shared_ptr<Entity>>>, 64> entitymap,
         std::list<unsigned int> timeout_mule, 
         std::list<std::shared_ptr<ProductionEntry>> production_list) :
@@ -32,7 +32,8 @@ public:
             timeout_mule(timeout_mule),
             gas_geysers_available(gas_geysers_available),
             final_supply(final_supply),
-            built(built){
+            built(built),
+            max_id(max_id){
                 for(int i = 0;i < 64;i++){
                     entity_count[i] = entitymap[i]->size();
                 }
@@ -49,6 +50,7 @@ public:
     unsigned int workers_available;
     unsigned int mineral_worker;
     unsigned int gas_worker;
+    unsigned int max_id;
     bool built;
     std::array<std::shared_ptr<std::list<std::shared_ptr<Entity>>>, 64> entitymap;
     std::list<std::shared_ptr<ProductionEntry>> production_list;

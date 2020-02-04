@@ -11,4 +11,5 @@ typedef struct Node{
     Action action;
     double avg_score;
     int visits;
+    const int skips;
 } Node;

@@ -98,7 +98,7 @@ std::shared_ptr<ProductionEntry> Simulator<gamerace>::check_and_build(int class_
                 currentState.minerals -= meta_map[class_id].minerals;
                 currentState.gas -= meta_map[class_id].gas;
                 currentState.supply_used += meta_map[class_id].supply;
-                std::shared_ptr<Entity> producee(new Entity(meta_map, class_id, currentState.time_tick));
+                std::shared_ptr<Entity> producee(new Entity(meta_map, class_id, currentState.time_tick, currentState.max_id));
                 std::shared_ptr<ProductionEntry> e(new ProductionEntry(producee, producer, currentState));
                 if(producer->is_chrono_boosted(currentState))e->chrono_boost(currentState, producer->get_chrono_until());
                 producer->producees.push_back(e);
@@ -278,7 +278,7 @@ std::vector<std::pair<int, int>> Simulator<gamerace>::get_chrono_targets(){
     std::vector<std::pair<int, int>> targets;
     for(unsigned int building_id : building_ids){
         for(auto building : *currentState.entitymap[building_id]){
-            if(!building->is_chrono_boosted(currentState)){
+            if(!building->is_chrono_boosted(currentState) && building->occupied < building->max_occupation()){
                 targets.push_back({building_id, building->obj_id});
             }
         }

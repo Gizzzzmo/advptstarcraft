@@ -14,10 +14,11 @@ GameState::GameState(const GameState& state) :
     gas_worker(state.gas_worker),
     timeout_mule(state.timeout_mule),
     build_list(state.build_list),
-    gas_geysers_available(gas_geysers_available),
+    gas_geysers_available(state.gas_geysers_available),
     final_supply(state.final_supply),
     entity_count(state.entity_count),
-    built(state.built) {
+    built(state.built),
+    max_id(state.max_id){
         std::map<std::shared_ptr<Entity>, std::shared_ptr<Entity>> entity_translation_map;
         for(int i = 0;i < 64;i++){
             std::shared_ptr<std::list<std::shared_ptr<Entity>>> list(new std::list<std::shared_ptr<Entity>>);
@@ -83,6 +84,7 @@ GameState& GameState::operator=(const GameState& state){
         final_supply = state.final_supply;
         entity_count = state.entity_count;
         built = state.built;
+        max_id = state.max_id;
         
         std::map<std::shared_ptr<Entity>, std::shared_ptr<Entity>> entity_translation_map;
         for(int i = 0;i < 64;i++){

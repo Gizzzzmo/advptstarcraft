@@ -1,13 +1,13 @@
 #include "Entity.h"
 
-Entity::Entity(const std::array<EntityMeta, 64>& metamap, int class_id, unsigned int time_tick) :
+Entity::Entity(const std::array<EntityMeta, 64>& metamap, int class_id, unsigned int time_tick, unsigned int& id) :
     occupied(metamap[class_id].max_occupation),
     energy(metamap[class_id].start_energy),
     clss_id(class_id),
     metamap(metamap),
     chrono_boosted_until(time_tick)
 {
-    obj_id = getCounter()++;
+    obj_id = id++;
     std::stringstream ss;
     ss << clss_id << "." << obj_id;
     ss >> idd;

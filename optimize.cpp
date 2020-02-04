@@ -137,126 +137,186 @@ int random_play_through(Simulator<gamerace>& sim, int leaf_qualifier){
 
 template<Scenario scenario, Race gamerace>
 int mcts(Simulator<gamerace>& sim){
-    Node* startNode = new Node{nullptr, {}, {-1, -1, -1}, 0, 0};
+    Node* startNode = new Node{nullptr, {}, {-1, -1, -1}, 0, 0, 0};
     GameState rootState = sim.currentState;
-    Node& currentRoot = *startNode;
+    Node* currentRoot = startNode;
 
     int k = 0;
     while(true){
         k++;
-        Node& currentNode = currentRoot;
+        Node* currentNode = currentRoot;
         std::cout <<"selection " << k << ", time " << rootState.time_tick<< ", looking for next move:\n";
-        for(int i = 0;i < 50;i++){
+        for(int i = 0;i < 1500;i++){
+            int currentdepth = 0;
             currentNode = currentRoot;
             std::cout << "  starting iteration number " << i <<", searching for leaf:\n";
-            if(currentNode.visits == -1)break;
-            while(currentNode.visits > 0){
-                currentNode.visits++;
+            if(currentNode->visits == -1)break;
+            while(currentNode->visits > 0){
+                currentdepth++;
+                currentNode->visits++;
                 double max_ucb = 0;
                 double maxScore = 0;
                 bool nonleaf_found = false;
-                std::cout << "    " << &currentNode << " "<< currentNode.visits <<"\n";
-                std::cout << "    number of possible children: " << currentNode.children.size() << "\n";
-                for(Node* child_ptr : currentNode.children){
-                    Node& child = *child_ptr;
-                    if(child.visits != -1)nonleaf_found = true;
-                    if(child.avg_score > maxScore)maxScore = child.avg_score;
+                std::cout << "    " << currentNode << " "<< currentNode->visits <<"\n";
+                std::cout << "    number of possible children: " << currentNode->children.size() << "\n";
+                for(Node* child : currentNode->children){
+                    if(child->visits != -1)nonleaf_found = true;
+                    if(child->avg_score > maxScore)maxScore = child->avg_score;
                 }
                 if(!nonleaf_found){
-                    currentNode.visits = -1;
-                    currentNode.avg_score = maxScore;
+                    currentNode->visits = -1;
+                    currentNode->avg_score = maxScore;
                     break;
                 }
-                if(maxScore == 0)maxScore = 1;
                 Node* next_node = nullptr;
-                for(Node* child_ptr : currentNode.children){
-                    Node& child = *child_ptr;
-                    std::cout << "      " << &currentNode << " " << currentNode.visits<<"\n";
-                    double ucb = child.avg_score/maxScore + std::sqrt(std::log(currentNode.visits)/std::max((double)child.visits, 0.1));
-                    std::cout << "      child " << &child << ", visits : " << child.visits << ", ucb: " << ucb << "\n";
-                    if(ucb > max_ucb){
-                        max_ucb = ucb;
-                        next_node = child_ptr;
+                if(maxScore == 0){
+                    std::cout << "    randomly selecting child\n";
+                    double r = currentNode->children.size() * ((double) std::rand() / (RAND_MAX));
+                    int j = 1;
+                    for(Node* child : currentNode->children){
+                        if(r <= j){
+                            next_node = child;
+                            break;
+                        }
+                        j++;
                     }
                 }
-                currentNode = *next_node;
-                std::cout << "    selected move " << currentNode.action.entity_to_be_built_id << ", with ucb " << max_ucb <<"\n";
-                if(currentNode.visits != -1)
-                    sim.step(currentNode.action.entity_to_be_built_id,
-                        currentNode.action.chrono_target_class,
-                        currentNode.action.chrono_target_id);
+                else{
+                    for(Node* child : currentNode->children){
+                        std::cout << "      " << currentNode << " " << currentNode->visits<<"\n";
+                        double ucb = 0.2*currentdepth*currentdepth*(child->avg_score/maxScore) +
+                                std::sqrt(std::log(currentNode->visits)/std::max((double)child->visits, 0.01));
+                        std::cout << "      child " << child << ", visits : " << child->visits << ", ucb: " << ucb << "\n";
+                        std::cout << "      child " << std::log(currentNode->visits) << ", visits : " << std::log(currentNode->visits)/std::max((double)child->visits, 0.1) << ", ucb: " << child->avg_score << "\n";
+                        if(ucb > max_ucb){
+                            max_ucb = ucb;
+                            next_node = child;
+                        }
+                    }
+                }
+                currentNode = next_node;
+                std::cout << "    " << next_node << "\n";
+                std::cout << "    selected move " << currentNode->action.entity_to_be_built_id << ", with ucb " << max_ucb <<"\n";
+                if(currentNode->visits != -1){
+                    sim.step(currentNode->action.entity_to_be_built_id,
+                            currentNode->action.chrono_target_class,
+                            currentNode->action.chrono_target_id);
+                    for(int i = 0;i < currentNode->skips;i++){
+                        sim.step(-1, -1, -1);
+                    }
+                }
             }
-            currentNode.visits++;
+            currentNode->visits++;
             std::cout << "  found leaf, checking if actual game leaf:\n";
             double score = 0;
-            if(currentNode.visits == -1)score = currentNode.avg_score;
+            if(currentNode->visits == -1)score = currentNode->avg_score;
             else{
                 std::shared_ptr<Entity> caster = sim.get_caster();
                 if((scenario == Scenario::Push && sim.currentState.time_tick == leaf_qualifier)
                     || scenario == Scenario::Rush && sim.currentState.entitymap[target_id]->size() == leaf_qualifier){
                     score = scenario == Scenario::Push ? sim.currentState.entitymap[target_id]->size()
                                                         : 1/((double)sim.currentState.time_tick + 1);
-                    currentNode.visits = -1;
+                    currentNode->visits = -1;
                     std::cout << "  yes! setting score " << score <<"\n";
                 }
                 else{
                     std::cout << "  no, expanding leaf, new leaves:\n";
+                    GameState simStart = sim.currentState;
                     std::array<int, 64> options = {-1};
                     if(!sim.worker_distribution_well_defined())options = sim.getOptions();
+                    bool sthhappened = false;
                     for(int option : options){
                         std::cout << "    is viable? " << option << "\n";
                         if(is_option_viable<scenario, gamerace>(option, sim.currentState)){
                             if(caster){
                                 std::vector<std::pair<int, int>> targets = sim.get_chrono_targets();
                                 for(std::pair<int, int>& target : targets){
+                                    sim.currentState = simStart;
+                                    sthhappened = true;
                                     std::cout << "    " << option << ", " << target.first << " " << target.second << "\n";
-                                    currentNode.children.push_back(new Node{&currentNode, {}, {option, target.first, target.second}, 0, 0});
+                                    sim.step(option, target.first, target.second);
+                                    int skips = 0;
+                                    while(sim.worker_distribution_well_defined() && 
+                                        (sim.get_caster() == nullptr || sim.get_chrono_targets().size() == 0)){
+                                        if((scenario == Scenario::Push && sim.currentState.time_tick == leaf_qualifier)
+                                            || scenario == Scenario::Rush && sim.currentState.entitymap[target_id]->size() == leaf_qualifier){
+                                            break;
+                                        }
+                                        skips++;
+                                        sim.step(-1, -1, -1);
+                                    }
+                                    currentNode->children.push_back(new Node{currentNode, {}, {option, target.first, target.second}, 0, 0, skips});
                                 }
                             }
+                            if(option == -1 && sthhappened)break;
+                            sim.currentState = simStart;
+                            sthhappened = true;
+                            sim.step(option, -1, -1);
+                            int skips = 0;
+                            while(sim.worker_distribution_well_defined() && 
+                                (sim.get_caster() == nullptr || sim.get_chrono_targets().size() == 0)){
+                                if((scenario == Scenario::Push && sim.currentState.time_tick == leaf_qualifier)
+                                    || scenario == Scenario::Rush && sim.currentState.entitymap[target_id]->size() == leaf_qualifier){
+                                    break;
+                                }
+                                skips++;
+                                sim.step(-1, -1, -1);
+                            }
                             std::cout << "    " << option << ", " << -1 << " " << -1 << "\n";
-                            currentNode.children.push_back(new Node{&currentNode, {}, {option, -1, -1}, 0, 0});
+                            currentNode->children.push_back(new Node{currentNode, {}, {option, -1, -1}, 0, 0, skips});
                         }
                         if(option == -1)break;
                     }
                     std::cout << "  doing random playouts:\n";
-                    for(int i = 0;i < 5;i++){
-                        double ss = random_play_through<scenario, gamerace>(sim, leaf_qualifier);
+                    for(int j = 0;j < 2;j++){
+                        sim.currentState = simStart;
+                        double ss = random_play_through<scenario>(sim, leaf_qualifier);
                         std::cout << "    score: " << ss << "\n";
                         score += ss;
                     }
-                    score /= 5;
+                    score /= 2;
                     std::cout << "  average score: " << score << "\n";
-                    if(scenario == Scenario::Rush)score +=1;
+                    if(scenario == Scenario::Rush)score =1/(score +1);
                 }
-                if(scenario == Scenario::Rush)score = 1/score;
+                currentNode->avg_score = score;
             }
             std::cout << "  backpropagating:\n";
-            Node* parent = &currentNode;
-            while(parent != &currentRoot){
-                std::cout << "    " << parent << " " << &currentRoot << "\n";
-                currentNode.avg_score = (currentNode.avg_score*currentNode.visits + score)/(currentNode.visits+1);
-                parent = currentNode.parent;
+            if(currentRoot != currentNode)currentNode = currentNode->parent;
+            while(currentNode != currentRoot){
+                std::cout << "    " << currentNode << " " << currentRoot << "\n";
+                currentNode->avg_score = (currentNode->avg_score*currentNode->visits + score)/(currentNode->visits+1);
+                currentNode = currentNode->parent;
             }
             sim.currentState = rootState;
         }
         std::cout << "selecting child with best score:\n";
         double max_score = 0;
-        for(Node* child_ptr : currentRoot.children){
-            Node& child = *child_ptr;
-            if(child.avg_score > max_score){
-                max_score = child.avg_score;
+        for(Node* child : currentRoot->children){
+            if(child->avg_score > max_score){
+                max_score = child->avg_score;
                 currentRoot = child;
             }
         }
-        std::cout << "selected move " << currentRoot.action.entity_to_be_built_id << " with score " << max_score << "\n";
+        std::cout << "time: " << sim.currentState << "\n";
+        std::cout << "selected move " << currentRoot->action.entity_to_be_built_id<<" "<<
+                    currentRoot->action.chrono_target_class << " " <<
+                    currentRoot->action.chrono_target_id << " with score " << max_score << "\n";
 
-        sim.step(currentRoot.action.entity_to_be_built_id,
-            currentRoot.action.chrono_target_class,
-            currentRoot.action.chrono_target_id);
+        sim.step(currentRoot->action.entity_to_be_built_id,
+            currentRoot->action.chrono_target_class,
+            currentRoot->action.chrono_target_id);
         if((scenario == Scenario::Push && sim.currentState.time_tick == leaf_qualifier)
             || scenario == Scenario::Rush && sim.currentState.entitymap[target_id]->size() == leaf_qualifier){
             return scenario == Scenario::Push ? sim.currentState.entitymap[target_id]->size()
                                                 : sim.currentState.time_tick;
+        }
+        for(int i = 0;i < currentRoot->skips;i++){
+            sim.step(-1, -1, -1);
+            if((scenario == Scenario::Push && sim.currentState.time_tick == leaf_qualifier)
+                || scenario == Scenario::Rush && sim.currentState.entitymap[target_id]->size() == leaf_qualifier){
+                return scenario == Scenario::Push ? sim.currentState.entitymap[target_id]->size()
+                                                    : sim.currentState.time_tick;
+            }
         }
         rootState = sim.currentState;
     }
@@ -404,15 +464,35 @@ void optimize(const GameState& initialState)
         std::chrono::system_clock::now().time_since_epoch()
     );
     std::srand(ms.count());
-    best_score = mcts<scenario>(sim);
     double score = 0;
-    for(int i = 0;i < 100;i++){
+    std::cout << score/1000 <<" ???\n";
+    sim.step(4, -1, -1);
+    sim.step(4, -1, -1);
+    sim.step(6, -1, -1);
+    GameState simStart = sim.currentState;
+    for(int i = 0;i < 1000;i++){
         double ss = random_play_through<scenario>(sim, leaf_qualifier);
         //std::cout << " " << ss << "\n";
         score += ss;
-        sim.currentState = initialState;
+        sim.currentState = simStart;
     }
-    std::cout << score/100 <<" ???\n";
+    sim.currentState = initialState;
+    std::cout << score/1000 <<" ???\n";
+    score = 0;
+    sim.step(4, -1, -1);
+    sim.step(4, -1, -1);
+    sim.step(4, -1, -1);
+    simStart = sim.currentState;
+    for(int i = 0;i < 1000;i++){
+        double ss = random_play_through<scenario>(sim, leaf_qualifier);
+        //std::cout << " " << ss << "\n";
+        score += ss;
+        sim.currentState = simStart;
+    }
+    std::cout << score/1000 <<" ???\n";
+    sim.currentState = initialState;
+    best_score = mcts<scenario>(sim);
+
 
     std::cout << "best score: " << best_score << "\n with build:\n";
     for(Action& a : best_build){
@@ -429,6 +509,7 @@ int main(int argc, char** argv){
     std::map<std::string, int> name_map;
 
     unsigned int supply = 15;
+    unsigned int max_id = 0;
 
     //keep in mind minerals and gas are in hundredths
     std::array<std::shared_ptr<std::list<std::shared_ptr<Entity>>>, 64> entitymap;
@@ -450,10 +531,10 @@ int main(int argc, char** argv){
         super_id = 0;
         building_ids = {0, 1, 2, 7, 8, 9, 10, 12, 14, 15, 16, 18, 22, 24};
         for(int i = 0;i < 12;i++){
-            std::shared_ptr<Entity> a(new Entity(meta_map, 5, 0));
+            std::shared_ptr<Entity> a(new Entity(meta_map, 5, 0, max_id));
             entitymap[5]->push_back(a);
         }
-        std::shared_ptr<Entity> a(new Entity(meta_map, 0, 0));
+        std::shared_ptr<Entity> a(new Entity(meta_map, 0, 0, max_id));
         entitymap[0]->push_back(a);
     }
     else{
@@ -466,10 +547,10 @@ int main(int argc, char** argv){
             base_ids = {0, 1, 2};
             super_id = 1;
             for(int i = 0;i < 12;i++){
-            	std::shared_ptr<Entity> a(new Entity(meta_map, 4, 0));
+            	std::shared_ptr<Entity> a(new Entity(meta_map, 4, 0, max_id));
                 entitymap[4]->push_back(a);
             }
-            std::shared_ptr<Entity> a(new Entity(meta_map, 0, 0));
+            std::shared_ptr<Entity> a(new Entity(meta_map, 0, 0, max_id));
             entitymap[0]->push_back(a);
         }
         else{
@@ -481,43 +562,43 @@ int main(int argc, char** argv){
             base_ids = {0, 3, 17};
             super_id = 1;
             for(int i = 0;i < 12;i++){
-            	std::shared_ptr<Entity> a(new Entity(meta_map, 9, 0));
+            	std::shared_ptr<Entity> a(new Entity(meta_map, 9, 0, max_id));
                 entitymap[9]->push_back(a);
             }
-            std::shared_ptr<Entity> hatch(new Entity(meta_map, 0, 0));
+            std::shared_ptr<Entity> hatch(new Entity(meta_map, 0, 0, max_id));
             entitymap[0]->push_back(hatch);
-            std::shared_ptr<Entity> ovi(new Entity(meta_map, 16, 0));
+            std::shared_ptr<Entity> ovi(new Entity(meta_map, 16, 0, max_id));
             entitymap[16]->push_back(ovi);
             supply = 14;
         }
     }
 
     target_id = name_map[target_unit];
-    const GameState initialState(0, 5000, 0, supply, 12, 12, 12, 0, 0, 3, true, entitymap, {}, {});
+    const GameState initialState(0, 5000, 0, supply, 12, 12, 12, 0, 0, 3, true, max_id, entitymap, {}, {});
 
     switch(gamerace){
         case Protoss:
             if(!scenario.compare("rush")){
-                optimize<Race::Protoss, Scenario::Rush>(initialState);
+                optimize<Race::Protoss, Scenario::Push>(initialState);
             }
             else if(!scenario.compare("push")){
-                optimize<Race::Protoss, Scenario::Push>(initialState);
+                optimize<Race::Protoss, Scenario::Rush>(initialState);
             }
             break;
         case Terran:
             if(!scenario.compare("rush")){
-                optimize<Race::Terran, Scenario::Rush>(initialState);
+                optimize<Race::Terran, Scenario::Push>(initialState);
             }
             else if(!scenario.compare("push")){
-                optimize<Race::Terran, Scenario::Push>(initialState);
+                optimize<Race::Terran, Scenario::Rush>(initialState);
             }
             break;
         case Zerg:
             if(!scenario.compare("rush")){
-                optimize<Race::Zerg, Scenario::Rush>(initialState);
+                optimize<Race::Zerg, Scenario::Push>(initialState);
             }
             else if(!scenario.compare("push")){
-                optimize<Race::Zerg, Scenario::Push>(initialState);
+                optimize<Race::Zerg, Scenario::Rush>(initialState);
             }
             break;
     }

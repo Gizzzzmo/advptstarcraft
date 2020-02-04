@@ -30,7 +30,6 @@ typedef struct{
 
 class Entity{
 private:
-    unsigned int occupied;
     unsigned int energy;
     unsigned int chrono_boosted_until;
     int clss_id;
@@ -43,10 +42,11 @@ private:
     }
 
 public:
+    unsigned int occupied;
     unsigned int obj_id;
 
     std::list<std::shared_ptr<ProductionEntry>> producees;
-    Entity(const std::array<EntityMeta, 64>& metamap, int class_id, unsigned int time_tick);
+    Entity(const std::array<EntityMeta, 64>& metamap, int class_id, unsigned int time_tick, unsigned int& id);
 
     int class_id() const{
         return clss_id;

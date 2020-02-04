@@ -20,6 +20,7 @@ int main(int argc, char** argv){
     int gas_id;
     int super_id;
     unsigned int supply = 15;
+    unsigned int max_id = 0;
 
     std::map<std::string, int> name_map;
 
@@ -47,10 +48,10 @@ int main(int argc, char** argv){
             base_ids = {0, 1, 2};
             super_id = 1;
             for(int i = 0;i < 12;i++){
-            	std::shared_ptr<Entity> a(new Entity(meta_map, 4, 0));
+            	std::shared_ptr<Entity> a(new Entity(meta_map, 4, 0, max_id));
                 entitymap[4]->push_back(a);
             }
-            std::shared_ptr<Entity> a(new Entity(meta_map, 0, 0));
+            std::shared_ptr<Entity> a(new Entity(meta_map, 0, 0, max_id));
             entitymap[0]->push_back(a);
             break;
         }
@@ -62,12 +63,12 @@ int main(int argc, char** argv){
             base_ids = {0, 3, 17};
             super_id = 1;
             for(int i = 0;i < 12;i++){
-            	std::shared_ptr<Entity> a(new Entity(meta_map, 9, 0));
+            	std::shared_ptr<Entity> a(new Entity(meta_map, 9, 0, max_id));
                 entitymap[9]->push_back(a);
             }
-            std::shared_ptr<Entity> hatch(new Entity( meta_map, 0, 0));
+            std::shared_ptr<Entity> hatch(new Entity( meta_map, 0, 0, max_id));
             entitymap[0]->push_back(hatch);
-            std::shared_ptr<Entity> ovi(new Entity( meta_map, 16, 0));
+            std::shared_ptr<Entity> ovi(new Entity( meta_map, 16, 0, max_id));
             entitymap[16]->push_back(ovi);
             supply = 14;
             break;
@@ -80,10 +81,10 @@ int main(int argc, char** argv){
             base_ids = {0};
             super_id = 0;
             for(int i = 0;i < 12;i++){
-            	std::shared_ptr<Entity> a(new Entity(meta_map, 5, 0));
+            	std::shared_ptr<Entity> a(new Entity(meta_map, 5, 0, max_id));
             	entitymap[5]->push_back(a);
             }
-            std::shared_ptr<Entity> a(new Entity(meta_map, 0, 0));
+            std::shared_ptr<Entity> a(new Entity(meta_map, 0, 0, max_id));
             entitymap[0]->push_back(a);
             break;
         }
@@ -117,7 +118,7 @@ int main(int argc, char** argv){
     }
     if(DEBUG)
     	std::cout << "Initialize Game State\n";
-    const GameState initialState(0, 5000, 0, supply, 12, 12, 12, 0, 0, 12, true, entitymap, {}, {});
+    const GameState initialState(0, 5000, 0, supply, 12, 12, 12, 0, 0, 12, true, max_id, entitymap, {}, {});
     json output;
     switch(race){
         case Terran:
