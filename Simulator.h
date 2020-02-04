@@ -50,6 +50,8 @@ private:
 
     bool needs_larva(int class_id);
 
+    bool is_zergling(int class_id);
+
     void update_energy();
 
 public:

@@ -3,7 +3,24 @@
 from sys import argv
 
 line_string = """
-meta_map[{class_id}] = {{{mins}, {gas}, {build_time}, {supply_delta}, {provided_supply_delta}, {max_energy}, {start_energy}, {ablty_cost}, 0x{producer_id:0>16X}, {destiny}, 0x{requirements:0>16X}, {maximum_occupation}, {is_worker}, {produces_larva}, {units_produced}, "{name}"}};
+meta_map[{class_id}] = {{
+                            {mins}, //mins
+                            {gas},  //gas
+                            {build_time}, //build_time
+                            {supply_delta}, //supply_delta
+                            {provided_supply_delta}, //provided_supply_delta
+                            {max_energy}, //max_energy
+                            {start_energy}, //start_energy
+                            {ablty_cost}, //ablty_cost
+                            0x{producer_id:0>16X}, //producer_id
+                            {destiny}, //destiny
+                            0x{requirements:0>16X}, //requirements
+                            {maximum_occupation}, //maximum_occupation
+                            {is_worker}, //is_worker
+                            {produces_larva}, //produces_larva
+                            {units_produced}, //units_produced
+                            "{name}" //name
+}};
 name_map["{name}"] = {class_id};
 """
 
@@ -90,6 +107,8 @@ for entities in (zergs, prot, terr):
             e["provided_supply_delta"] = e["provided_supply"]
         if e["producer"] != "" and e["destiny"] in ("Destiny::consumed_at_start", "Destiny::consumed_at_end"):
             e["supply_delta"] = e["supply"] - entities[e["producer"].split("/")[0]]["supply"]
+            if e["name"] == "Baneling":
+                e["supply_delta"] = 0
         else:
             e["supply_delta"] = e["supply"]
         e["producer_id"] = make_bitmap(entities, e["producer"].split("/"))

@@ -26,6 +26,8 @@ inline std::list<std::shared_ptr<ProductionEntry>> Simulator<gamerace>::process_
             //TODO: Add to enity list
             if(entry->producee->is_worker())currentState.workers_available++;
             currentState.entitymap[(entry->producee)->class_id()]->push_back(entry->producee);
+            if(is_zergling(entry->producee->class_id())) 
+                currentState.entitymap[(entry->producee)->class_id()]->push_back(entry->second_producee);
             std::shared_ptr<std::list<std::shared_ptr<Entity>>> producers = currentState.entitymap[(entry->producer)->class_id()];
             //std::list<Entity*>* producers = currentState.entitymap[(entry->producer)->class_id()];
             switch(entry->producee->producer_destiny()) {
@@ -85,6 +87,11 @@ bool Simulator<gamerace>::needs_larva(int class_id){
 }
 
 template<Race gamerace>
+bool Simulator<gamerace>::is_zergling(int class_id){
+    return gamerace == Zerg && ( meta_map[class_id].name == "Zergling" );
+}
+
+template<Race gamerace>
 void Simulator<gamerace>::error_exit(std::string message, json& output) {
     output["buildlistValid"] = 0;
     std::cerr << message << "\n";
@@ -129,6 +136,12 @@ std::shared_ptr<ProductionEntry> Simulator<gamerace>::check_and_build(int class_
                 currentState.supply_used += meta_map[class_id].supply;
                 std::shared_ptr<Entity> producee(new Entity(meta_map, class_id, currentState.time_tick));
                 std::shared_ptr<ProductionEntry> e(new ProductionEntry(producee, producer, currentState));
+
+                if (is_zergling(class_id)){
+                    std::shared_ptr<Entity> second_producee(new Entity(meta_map, class_id, currentState.time_tick));
+                    e->second_producee = second_producee;
+                }
+
                 if(producer->is_chrono_boosted(currentState))e->chrono_boost(currentState, producer->get_chrono_until());
                 producer->producees.push_back(e);
                 return e;
@@ -167,6 +180,10 @@ inline void Simulator<gamerace>::generate_json_build_end(std::vector<json> &even
         event["name"] = meta_map[entry->producee->class_id()].name;
         event["producerID"] = entry->producer->id();
         event["producedIDs"] = {entry->producee->id()};
+
+        if(is_zergling(entry->producee->class_id()))
+            event["producedIDs"].push_back(entry->second_producee->id());
+
         events.push_back(event);
     }
 }
