@@ -79,7 +79,7 @@ int random_play_through(Simulator<gamerace>& sim, int leaf_qualifier){
             }
         }
 
-        //std::cout << "time " << currentState.time_tick<<", options:\n";
+        std::cout << "time " << currentState.time_tick<<", options:\n";
         std::shared_ptr<Entity> caster = gamerace == Race::Protoss ? sim.get_caster() : nullptr;
         std::array<int, 64> options = {-1};
         if(!sim.worker_distribution_well_defined() && 
@@ -90,6 +90,7 @@ int random_play_through(Simulator<gamerace>& sim, int leaf_qualifier){
         std::vector<int> viable_options;
         std::vector<double> weights;
         for(int option : options){
+            std::cout << " option: " << (option == -1 ? "-1": meta_map[option].name) << ", is viable? " << is_option_viable<scenario, gamerace>(option, currentState) << "\n";
             if(is_option_viable<scenario, gamerace>(option, currentState)){
                 viable_options.push_back(option);
                 weights.push_back(1);
@@ -99,7 +100,7 @@ int random_play_through(Simulator<gamerace>& sim, int leaf_qualifier){
         double sum = weights.size();
         //weigh options
         double r;
-        double untilnow;
+        double untilnow = 0;
         
         int chosen_target_class = -1;
         int chosen_target_id = -1;
@@ -123,6 +124,7 @@ int random_play_through(Simulator<gamerace>& sim, int leaf_qualifier){
             untilnow += weights[i];
             if(r <= untilnow){
                 chosen_option = viable_options[i];
+                std::cout << " chosen option:" <<(chosen_option == -1 ? "-1": meta_map[chosen_option].name) << "\n";
                 break;
             }
         }
@@ -130,6 +132,7 @@ int random_play_through(Simulator<gamerace>& sim, int leaf_qualifier){
         else{
             sim.step(-1, -1, -1);
         }
+        if(currentState.time_tick > 500)break;
     }
     if(scenario == Scenario::Rush)return currentState.time_tick;
     else return currentState.entitymap[target_id]->size();
@@ -184,7 +187,7 @@ int mcts(Simulator<gamerace>& sim){
                 else{
                     for(Node* child : currentNode->children){
                         std::cout << "      " << currentNode << " " << currentNode->visits<<"\n";
-                        double ucb = 0.2*currentdepth*currentdepth*(child->avg_score/maxScore) +
+                        double ucb = 0.2*currentdepth*(child->avg_score/maxScore) +
                                 std::sqrt(std::log(currentNode->visits)/std::max((double)child->visits, 0.01));
                         std::cout << "      child " << child << ", visits : " << child->visits << ", ucb: " << ucb << "\n";
                         std::cout << "      child " << std::log(currentNode->visits) << ", visits : " << std::log(currentNode->visits)/std::max((double)child->visits, 0.1) << ", ucb: " << child->avg_score << "\n";
@@ -460,15 +463,16 @@ void optimize(const GameState& initialState)
         producers[2] = false;
         producers[3] = false;
     }
+    else if(gamerace == Race::Zerg){
+        requirements[28] = false;
+        producers[28] = false;
+    }
     std::chrono::milliseconds ms = std::chrono::duration_cast< std::chrono::milliseconds >(
         std::chrono::system_clock::now().time_since_epoch()
     );
     std::srand(ms.count());
     double score = 0;
     std::cout << score/1000 <<" ???\n";
-    sim.step(4, -1, -1);
-    sim.step(4, -1, -1);
-    sim.step(6, -1, -1);
     GameState simStart = sim.currentState;
     for(int i = 0;i < 1000;i++){
         double ss = random_play_through<scenario>(sim, leaf_qualifier);
@@ -479,9 +483,6 @@ void optimize(const GameState& initialState)
     sim.currentState = initialState;
     std::cout << score/1000 <<" ???\n";
     score = 0;
-    sim.step(4, -1, -1);
-    sim.step(4, -1, -1);
-    sim.step(4, -1, -1);
     simStart = sim.currentState;
     for(int i = 0;i < 1000;i++){
         double ss = random_play_through<scenario>(sim, leaf_qualifier);

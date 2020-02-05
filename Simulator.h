@@ -22,8 +22,8 @@ using json = nlohmann::json;
 // Helper Method
 //turns a bitmask into a vector of those indices of the mask, where the bit is one
 //TODO: for performance improvements, one might buffer theses vectors
-inline std::vector<int> mask_to_vector(unsigned long mask) {
-    std::vector<int> v;
+inline std::vector<unsigned> mask_to_vector(unsigned long mask) {
+    std::vector<unsigned> v;
     for(size_t i = 0;i < 64;++i){
         if(mask%2 == 1) v.push_back(i);
         mask = mask>>1;
@@ -63,6 +63,10 @@ private:
     unsigned int number_of_future_bases();
 
     unsigned int number_of_bases();
+
+    bool needs_larva(int class_id);
+
+    bool is_zergling(int class_id);
 
     void update_energy();
 

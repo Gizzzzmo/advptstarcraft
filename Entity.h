@@ -32,6 +32,9 @@ class Entity{
 private:
     unsigned int energy;
     unsigned int chrono_boosted_until;
+    unsigned int larva_spawn_start_time;
+    unsigned int current_larva;
+    unsigned int injected_until;            //0 means not injected
     int clss_id;
     std::string idd;
     const std::array<EntityMeta, 64>& metamap;
@@ -40,6 +43,7 @@ private:
         static unsigned int counter = 0;
         return counter;
     }
+    void update_larva(unsigned now);
 
 public:
     unsigned int occupied;
@@ -116,8 +120,19 @@ public:
 
     void chrono_boost(GameState& currentState);
 
+    // Called to give down properties of the producer to the
+    // producee at the end of production. (consumed_at_end)
+    void finalize(std::shared_ptr<Entity> producer);
+
+    bool inject_larva(GameState& currentState);
+
+    bool decrement_larva(GameState& currentState);
+
     bool cast_if_possible();
     bool can_cast();
+    
+    void undo_cast();
+
     // use only for occupied producers
     void make_available(GameState& state);
 };

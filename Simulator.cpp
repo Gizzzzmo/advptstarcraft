@@ -13,12 +13,15 @@ inline std::list<std::shared_ptr<ProductionEntry>> Simulator<gamerace>::process_
             //TODO: Add to enity list
             if(entry->producee->is_worker())currentState.workers_available++;
             currentState.entitymap[(entry->producee)->class_id()]->push_back(entry->producee);
+            if(is_zergling(entry->producee->class_id())) 
+                currentState.entitymap[(entry->producee)->class_id()]->push_back(entry->second_producee);
             std::shared_ptr<std::list<std::shared_ptr<Entity>>> producers = currentState.entitymap[(entry->producer)->class_id()];
             //std::list<Entity*>* producers = currentState.entitymap[(entry->producer)->class_id()];
             switch(entry->producee->producer_destiny()) {
                 case consumed_at_end:
                     for(std::list<std::shared_ptr<Entity>>::iterator it = producers->begin();it != producers->end();++it){
                         if(*it == entry->producer){
+                            if (gamerace == Zerg) entry->producee->finalize(entry->producer);
                             producers->erase(it);
                             break;
                         }
@@ -66,14 +69,26 @@ void Simulator<gamerace>::update_resources(){
 }
 
 template<Race gamerace>
+bool Simulator<gamerace>::needs_larva(int class_id){
+    return gamerace == Race::Zerg && meta_map[class_id].production_mask == 0x0000000010000000;
+}
+
+template<Race gamerace>
+bool Simulator<gamerace>::is_zergling(int class_id){
+    return gamerace == Zerg && ( meta_map[class_id].name == "Zergling" );
+}
+
+template<Race gamerace>
 void Simulator<gamerace>::error_exit(std::string message, json& output) {
     output["buildlistValid"] = 0;
-    std::cerr << message << "\n";
+    if(DEBUG){
+        std::cerr << message << "\n";
+    }
 }
 
 template<Race gamerace>
 std::shared_ptr<ProductionEntry> Simulator<gamerace>::check_and_build(int class_id){
-    if(class_id == gas_id && currentState.entitymap[class_id]->size() == number_of_future_bases()*2)throw noGasGeyserAllowedException();
+    if(class_id == gas_id && currentState.entitymap[class_id]->size() == number_of_bases()*2)throw noGasGeyserAllowedException(); //TODO: Fix dis
     if(meta_map[class_id].supply > static_cast<int>(currentState.supply-currentState.supply_used)) throw noSupplyException();
     //bitmask of 0 is interpreted as there not being any requirements, since all entities should be buildable somehow
     if(meta_map[class_id].requirement_mask == 0)goto req_fulfilled;
@@ -85,28 +100,47 @@ std::shared_ptr<ProductionEntry> Simulator<gamerace>::check_and_build(int class_
     if(currentState.gas < meta_map[class_id].gas) throw noGasException();
     if(currentState.minerals < meta_map[class_id].minerals)throw noMineralsException();
 
+    std::vector<unsigned> producer_types;
+    if(needs_larva(class_id))
+        producer_types = base_ids;
+    else
+        producer_types = mask_to_vector(meta_map[class_id].production_mask);
+
     //possibly search for chronoboosted producers?
-    for(int prd_id : mask_to_vector(meta_map[class_id].production_mask)){
+    for(int prd_id : producer_types){
         std::shared_ptr<std::list<std::shared_ptr<Entity>>> possible_producers = currentState.entitymap[prd_id];
         for(std::list<std::shared_ptr<Entity>>::iterator it = possible_producers->begin();it != possible_producers->end();++it){
             //std::cout << meta_map[prd_id].name << " is valid producer for " << meta_map[class_id].name << "\n";
             std::shared_ptr<Entity> producer = *it;
-            if(producer->check_and_occupy()){
-                if(producer->is_worker())currentState.workers_available--;
-                if(meta_map[class_id].producer_destiny == Destiny::freed)producer->make_available(currentState);
-                if(meta_map[class_id].producer_destiny == Destiny::consumed_at_start)possible_producers->erase(it);
+            if((needs_larva(class_id) && producer->decrement_larva(currentState)) 
+                    || (!needs_larva(class_id) && producer->check_and_occupy())){
+                if(producer->is_worker())
+                    currentState.workers_available--;
+                if(meta_map[class_id].producer_destiny == Destiny::freed)
+                    producer->make_available(currentState);
+                if(meta_map[class_id].producer_destiny == Destiny::consumed_at_start && !needs_larva(class_id))
+                    possible_producers->erase(it);
                 currentState.minerals -= meta_map[class_id].minerals;
                 currentState.gas -= meta_map[class_id].gas;
                 currentState.supply_used += meta_map[class_id].supply;
                 std::shared_ptr<Entity> producee(new Entity(meta_map, class_id, currentState.time_tick, currentState.max_id));
                 std::shared_ptr<ProductionEntry> e(new ProductionEntry(producee, producer, currentState));
+
+                if (is_zergling(class_id)){
+                    std::shared_ptr<Entity> second_producee(new Entity(meta_map, class_id, currentState.time_tick, currentState.max_id));
+                    e->second_producee = second_producee;
+                }
+
                 if(producer->is_chrono_boosted(currentState))e->chrono_boost(currentState, producer->get_chrono_until());
                 producer->producees.push_back(e);
                 return e;
             }
         }
     }
-    throw noProducerAvailableException();
+    if(needs_larva(class_id))
+        throw noLarvaAvailableException();
+    else
+        throw noProducerAvailableException();
     return nullptr;
 }
 
@@ -135,6 +169,10 @@ inline void Simulator<gamerace>::generate_json_build_end(std::vector<json> &even
         event["name"] = meta_map[entry->producee->class_id()].name;
         event["producerID"] = entry->producer->id();
         event["producedIDs"] = {entry->producee->id()};
+
+        if(is_zergling(entry->producee->class_id()))
+            event["producedIDs"].push_back(entry->second_producee->id());
+
         events.push_back(event);
     }
 }
@@ -315,7 +353,8 @@ std::array<int, 64> Simulator<gamerace>::getOptions(){
         }
 
         bool producer_available = false;
-        if(meta.production_mask == 0)producer_available = true;
+        if(meta.production_mask == 0 || (gamerace == Race::Zerg && meta.production_mask == 0x0000000010000000))
+            producer_available = true;
         else{
             for(int prd_id : mask_to_vector(meta.production_mask)){
                 if(currentState.entity_count[prd_id] > 0){
@@ -405,6 +444,12 @@ void Simulator<gamerace>::step(int entity_id, int cast_target_class_id, int cast
             //std::cout << "missing req\n";
             currentState.built = false;
         }
+        catch(noGasGeyserAllowedException& e){
+            currentState.built = false;
+        }
+        catch(noLarvaAvailableException& e){
+            currentState.built = false;
+        }
     }
     if(entry) {
         currentState.production_list.push_back(entry);
@@ -423,7 +468,19 @@ void Simulator<gamerace>::step(int entity_id, int cast_target_class_id, int cast
                         //special_event["name"] = "mule";
                 }
                 else{
-
+                    for(int i : base_ids){
+                        for(std::shared_ptr<Entity> base : *currentState.entitymap[i]){
+                            if(base->inject_larva(currentState)){
+                                //special_event["targetBuilding"] = base->id();
+                                //special_event["name"] = "injectlarvae";
+                                //generate_json = true;
+                                goto injected1;
+                            }
+                        }
+                    }
+                    // Couldn't actually cast. Undo it.
+                    specialunit->undo_cast();
+                    injected1:;
                 }
                     
             }
@@ -534,6 +591,8 @@ json Simulator<gamerace>::run(std::vector<int> build_list){
                 return output;
             }
             currentState.built = false;
+        }catch(noLarvaAvailableException& e){
+            currentState.built = false;
         }
         if(currentState.built) {
         	currentState.production_list.push_back(entry);
@@ -543,7 +602,6 @@ json Simulator<gamerace>::run(std::vector<int> build_list){
         else{
             for(std::shared_ptr<Entity> specialunit : *currentState.entitymap[super_id]){
                 if(specialunit->cast_if_possible()){
-                    generate_json = true;
                     json special_event;
                     special_event["type"] = "special";
                     special_event["triggeredBy"] = specialunit->id();
@@ -555,8 +613,22 @@ json Simulator<gamerace>::run(std::vector<int> build_list){
                             }
                         	currentState.timeout_mule.insert(currentState.timeout_mule.end(), currentState.time_tick + 64);
                             special_event["name"] = "mule";
+                            generate_json = true;
                         break;
                         case Zerg:
+                            for(int i : base_ids){
+                                for(std::shared_ptr<Entity> base : *currentState.entitymap[i]){
+                                    if(base->inject_larva(currentState)){
+                                        special_event["targetBuilding"] = base->id();
+                                        special_event["name"] = "injectlarvae";
+                                        generate_json = true;
+                                        goto injected;
+                                    }
+                                }
+                            }
+                            // Couldn't actually cast. Undo it.
+                            specialunit->undo_cast();
+                            injected:
                         break;
                         case Protoss:
                             std::shared_ptr<Entity> target = currentState.entitymap[0]->front();
@@ -566,6 +638,7 @@ json Simulator<gamerace>::run(std::vector<int> build_list){
                             }
                             special_event["name"] = "chronoboost";
                             special_event["targetBuilding"] = currentState.entitymap[0]->front()->id();
+                            generate_json = true;
                         break;
                     }
                     events.push_back(special_event);
