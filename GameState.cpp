@@ -62,7 +62,7 @@ std::ostream& operator<<(std::ostream  &outstream, GameState& state){
         "\n gas workers: " << state.gas_worker << 
         "\n sth was built: " << state.built << 
         "\n next thing to be built: " << state.build_list.front() << 
-        "\n minerals: " << state.minerals << 
+        "\n final supply: " << state.final_supply << 
         "\n minerals: " << state.minerals << "\n";
         return outstream;
 }

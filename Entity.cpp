@@ -54,7 +54,7 @@ void Entity::update_larva(unsigned now){
                 std::min((now - larva_spawn_start_time)/LARVA_DURATION, MAX_LARVA_PER_BUILDING-current_larva) 
                 : 0;
             larva_spawn_start_time += added_larva * LARVA_DURATION;
-            assert(larva_spawn_start_time <= now);
+            if(larva_spawn_start_time > now)std::cerr << larva_spawn_start_time << " " << now << "\n";
         }
         else
             added_larva = 0;
@@ -66,7 +66,7 @@ void Entity::update_larva(unsigned now){
                 : 0;
             added_larva += INJECTLARVAE_AMOUNT;
             injected_until = -1u;
-            assert(larva_spawn_start_time <= now);
+            if(larva_spawn_start_time > now)std::cerr << larva_spawn_start_time << " " << now << "\n";
         }
         else {
             added_larva = INJECTLARVAE_AMOUNT;

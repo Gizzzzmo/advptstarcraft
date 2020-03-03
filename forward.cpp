@@ -68,7 +68,7 @@ int main(int argc, char** argv){
                 entitymap[9]->push_back(a);
             }
             std::shared_ptr<Entity> hatch(
-                    new Entity( meta_map, 0, 0u - meta_map[name_map["Hatchery"]].build_time - LARVA_START*LARVA_DURATION, max_id));
+                    new Entity( meta_map, 0, 1u - meta_map[name_map["Hatchery"]].build_time - LARVA_START*LARVA_DURATION, max_id));
             entitymap[0]->push_back(hatch);
             std::shared_ptr<Entity> ovi(new Entity( meta_map, 16, 0, max_id));
             entitymap[16]->push_back(ovi);

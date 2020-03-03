@@ -36,11 +36,13 @@ inline std::list<std::shared_ptr<ProductionEntry>> Simulator<gamerace>::process_
                     break;
             }
             currentState.production_list.erase(prev);
-            for(auto it = entry->producer->producees.begin(); it != entry->producer->producees.end();++it){
-                if(*it == entry){
-                    entry->producer->producees.erase(it);
+            if(gamerace == Race::Protoss){
+                for(auto it = entry->producer->producees.begin(); it != entry->producer->producees.end();++it){
+                    if(*it == entry){
+                        entry->producer->producees.erase(it);
+                        break;
+                    }
                 }
-                break;
             }
             currentState.supply += entry->producee->supply_provided();
             result.push_back(entry);
@@ -132,7 +134,7 @@ std::shared_ptr<ProductionEntry> Simulator<gamerace>::check_and_build(int class_
                 }
 
                 if(producer->is_chrono_boosted(currentState))e->chrono_boost(currentState, producer->get_chrono_until());
-                producer->producees.push_back(e);
+                if(gamerace == Race::Protoss)producer->producees.push_back(e);
                 return e;
             }
         }
@@ -382,7 +384,7 @@ void Simulator<gamerace>::step(int entity_id, int cast_target_class_id, int cast
     if(entity_id > -1){
         if(entity_id == gas_id)currentState.gas_geysers_available++;
         currentState.final_supply = currentState.final_supply - meta_map[entity_id].supply + meta_map[entity_id].supply_provided;
-        currentState.entity_count[entity_id]++;
+        currentState.entity_count[entity_id] += meta_map[entity_id].units_produced;
         currentState.build_list.push_back(entity_id);
         if(meta_map[entity_id].producer_destiny == Destiny::consumed_at_end || meta_map[entity_id].producer_destiny == Destiny::consumed_at_start){
             currentState.entity_count[mask_to_vector(meta_map[entity_id].production_mask).front()]--;
@@ -390,7 +392,7 @@ void Simulator<gamerace>::step(int entity_id, int cast_target_class_id, int cast
     }
 
     if(DEBUG) std::cout << "  time: " << currentState.time_tick << "\n";
-    //generate_json = false;
+    bool generate_json = false;
     std::vector<json> events;
 
     update_resources();
@@ -399,10 +401,10 @@ void Simulator<gamerace>::step(int entity_id, int cast_target_class_id, int cast
 
     //Check finished buildings
     std::list<std::shared_ptr<ProductionEntry>> finished_list = process_production_list();
-    /*if (!finished_list.empty()){
+    if (is_recording && !finished_list.empty()){
         generate_json = true;
         generate_json_build_end(events, finished_list);
-    }*/
+    }
 
     //Start new buildings
 
@@ -413,7 +415,16 @@ void Simulator<gamerace>::step(int entity_id, int cast_target_class_id, int cast
             if(potential_target->obj_id == cast_target_obj_id)target = potential_target;
         }
         if(target){
-            get_caster()->cast_if_possible();
+            auto caster = get_caster();
+            caster->cast_if_possible();
+            if(is_recording){
+                generate_json = true;
+                json special_event;
+                special_event["type"] = "special";
+                special_event["triggeredBy"] = caster->id();
+                special_event["name"] = "chronoboost";
+                special_event["targetBuilding"] = target->id();
+            }
             target->chrono_boost(currentState);
             for(std::shared_ptr<ProductionEntry>& entry : target->producees){
                 entry->chrono_boost(currentState, target->get_chrono_until());
@@ -453,27 +464,37 @@ void Simulator<gamerace>::step(int entity_id, int cast_target_class_id, int cast
     }
     if(entry) {
         currentState.production_list.push_back(entry);
-        //generate_json = true;
-        //generate_json_build_start(events, entry);
+        if(is_recording){
+            generate_json = true;
+            generate_json_build_start(events, entry);
+        }
     }
     else if(gamerace != Race::Protoss){
         for(std::shared_ptr<Entity>& specialunit : *currentState.entitymap[super_id]){
             if(specialunit->cast_if_possible()){
-                //generate_json = true;
-                //json special_event;
-                //special_event["type"] = "special";
-                //special_event["triggeredBy"] = specialunit->id();
+                json special_event;
+                if(is_recording){
+                    special_event["type"] = "special";
+                    special_event["triggeredBy"] = specialunit->id();
+                }
                 if(gamerace == Race::Terran){
-                        currentState.timeout_mule.insert(currentState.timeout_mule.end(), currentState.time_tick + 64);
-                        //special_event["name"] = "mule";
+                    currentState.timeout_mule.insert(currentState.timeout_mule.end(), currentState.time_tick + 64);
+                    if(is_recording){
+                        generate_json = true;
+                        special_event["name"] = "mule";
+                        events.push_back(special_event);
+                    }
                 }
                 else{
                     for(int i : base_ids){
                         for(std::shared_ptr<Entity> base : *currentState.entitymap[i]){
                             if(base->inject_larva(currentState)){
-                                //special_event["targetBuilding"] = base->id();
-                                //special_event["name"] = "injectlarvae";
-                                //generate_json = true;
+                                if(is_recording){
+                                    special_event["targetBuilding"] = base->id();
+                                    special_event["name"] = "injectlarvae";
+                                    generate_json = true;
+                                    events.push_back(special_event);
+                                }
                                 goto injected1;
                             }
                         }
@@ -484,17 +505,22 @@ void Simulator<gamerace>::step(int entity_id, int cast_target_class_id, int cast
                 }
                     
             }
-            //events.push_back(special_event);
         }
         
     }
 
-    if(update_worker_distribution());
-        //generate_json = true;
+    if(update_worker_distribution() && is_recording)
+        generate_json = true;
 
-    /*if(generate_json){
-        messages.push_back(make_json_message(currentState, events));
-    }*/
+    if(generate_json){
+        recording.push_back(make_json_message(currentState, events));
+    }
+}
+
+template<Race gamerace>
+void Simulator<gamerace>::record(){
+    recording = {};
+    is_recording = true;
 }
 
 template<Race gamerace>
@@ -505,7 +531,7 @@ Simulator<gamerace>::Simulator(const std::array<EntityMeta, 64>& meta_map,
             const std::vector<unsigned int>& base_ids,
             const std::vector<unsigned int>& building_ids,
             const unsigned int super_id) :
-    worker_id(worker_id), gas_id(gas_id), meta_map(meta_map), base_ids(base_ids), super_id(super_id), initialState(initialState), currentState(initialState), building_ids(building_ids){}
+    worker_id(worker_id), gas_id(gas_id), meta_map(meta_map), base_ids(base_ids), super_id(super_id), initialState(initialState), currentState(initialState), building_ids(building_ids), is_recording(false){}
 
 template<Race gamerace>
 json Simulator<gamerace>::run(std::vector<int> build_list){

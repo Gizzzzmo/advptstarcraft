@@ -41,6 +41,7 @@ private:
     const std::vector<unsigned int>& base_ids;
     const std::vector<unsigned int>& building_ids;
     const int super_id;
+    bool is_recording;
 
     inline std::list<std::shared_ptr<ProductionEntry>> process_production_list();
 
@@ -72,6 +73,7 @@ private:
 
 public:
     GameState currentState;
+    std::vector<json> recording;
 
 Simulator(const std::array<EntityMeta, 64>& meta_map,
             const GameState &initialState,
@@ -91,6 +93,8 @@ Simulator(const std::array<EntityMeta, 64>& meta_map,
 
     std::array<int, 64> getOptions();
     //Possible entities
+
+    void record();
 
     void step(int entity_id, int cast_target_class_id, int cast_target_obj_id);
 //Propagates game one time step
