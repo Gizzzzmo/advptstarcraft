@@ -90,7 +90,7 @@ void Simulator<gamerace>::error_exit(std::string message, json& output) {
 
 template<Race gamerace>
 std::shared_ptr<ProductionEntry> Simulator<gamerace>::check_and_build(int class_id){
-    if(class_id == gas_id && currentState.entitymap[class_id]->size() == number_of_bases()*2)throw noGasGeyserAllowedException(); //TODO: Fix dis
+    if(class_id == gas_id && currentState.entitymap[class_id]->size() >= number_of_bases()*2)throw noGasGeyserAllowedException(); //TODO: Fix dis
     if(meta_map[class_id].supply > static_cast<int>(currentState.supply-currentState.supply_used)) throw noSupplyException();
     //bitmask of 0 is interpreted as there not being any requirements, since all entities should be buildable somehow
     if(meta_map[class_id].requirement_mask == 0)goto req_fulfilled;
@@ -251,7 +251,7 @@ inline bool Simulator<gamerace>::update_worker_distribution() {
     auto it = currentState.build_list.begin();
     
     do{
-        if(it == currentState.build_list.end())return false;
+        if(it == currentState.build_list.end())break;
         int next_entity = *it;
         cost_mins += meta_map[next_entity].minerals;
         cost_gas += meta_map[next_entity].gas;
@@ -260,7 +260,8 @@ inline bool Simulator<gamerace>::update_worker_distribution() {
     }while(mins >= cost_mins && gas >= cost_gas);
     int missing_mins = std::max(0, cost_mins - mins);
     int missing_gas = std::max(0, cost_gas - gas);
-    unsigned int ideal_mineral_worker = currentState.workers_available * 63 * missing_mins/(missing_mins * 63 + missing_gas * 70);
+    unsigned int ideal_mineral_worker = missing_mins + missing_gas == 0 ? currentState.workers_available : 
+        currentState.workers_available * 63 * missing_mins/(missing_mins * 63 + missing_gas * 70);
     unsigned int ideal_gas_worker = currentState.workers_available - ideal_mineral_worker;
     
     unsigned int max_gas_worker = static_cast<unsigned int>(currentState.entitymap[gas_id]->size()*3);
@@ -268,9 +269,9 @@ inline bool Simulator<gamerace>::update_worker_distribution() {
     unsigned int new_gas_worker = std::min(max_gas_worker, ideal_gas_worker);
     unsigned int new_mineral_worker = std::min(max_mineral_worker, ideal_mineral_worker);
     new_gas_worker = 
-        std::min(new_gas_worker + currentState.workers_available - new_gas_worker - new_mineral_worker, max_gas_worker);
+        std::min(currentState.workers_available - new_mineral_worker, max_gas_worker);
     new_mineral_worker = 
-        std::min(new_mineral_worker + currentState.workers_available - new_gas_worker - new_mineral_worker, max_mineral_worker);
+        std::min(currentState.workers_available - new_gas_worker, max_mineral_worker);
     
     if(new_gas_worker != currentState.gas_worker || new_mineral_worker != currentState.mineral_worker){
         currentState.gas_worker = new_gas_worker;
@@ -503,7 +504,7 @@ void Simulator<gamerace>::step(int entity_id, int cast_target_class_id, int cast
                     specialunit->undo_cast();
                     injected1:;
                 }
-                    
+                break;   
             }
         }
         
@@ -511,7 +512,6 @@ void Simulator<gamerace>::step(int entity_id, int cast_target_class_id, int cast
 
     if(update_worker_distribution() && is_recording)
         generate_json = true;
-
     if(generate_json){
         recording.push_back(make_json_message(currentState, events));
     }

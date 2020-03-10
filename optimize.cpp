@@ -278,26 +278,46 @@ int mcts(Simulator<gamerace>& sim){
                 currentRoot = child;
             }
         }
-
         sim.step(currentRoot->action.entity_to_be_built_id,
             currentRoot->action.chrono_target_class,
             currentRoot->action.chrono_target_id);
         best_build.push_back(currentRoot->action);
         if((scenario == Scenario::Push && sim.currentState.time_tick == leaf_qualifier)
-            || scenario == Scenario::Rush && sim.currentState.entitymap[target_id]->size() == leaf_qualifier){
-            return scenario == Scenario::Push ? sim.currentState.entitymap[target_id]->size()
-                                                : sim.currentState.time_tick;
+            || (scenario == Scenario::Rush && sim.currentState.entitymap[target_id]->size() == leaf_qualifier)){
+            goto loopend;
         }
         for(int i = 0;i < currentRoot->skips;i++){
             sim.step(-1, -1, -1);
             if((scenario == Scenario::Push && sim.currentState.time_tick == leaf_qualifier)
-                || scenario == Scenario::Rush && sim.currentState.entitymap[target_id]->size() == leaf_qualifier){
-                return scenario == Scenario::Push ? sim.currentState.entitymap[target_id]->size()
-                                                    : sim.currentState.time_tick;
+                || (scenario == Scenario::Rush && sim.currentState.entitymap[target_id]->size() == leaf_qualifier)){
+                goto loopend;
             }
         }
         rootState = sim.currentState;
     }
+    loopend:
+    for(auto tobebuilt : sim.currentState.build_list){
+        for(auto it = best_build.end(); it != best_build.begin();){
+            --it;
+            Action& action = *it;
+            if(tobebuilt == action.entity_to_be_built_id){
+                best_build.erase(it);
+                break;
+            }
+        }
+    }
+    for(auto entry : sim.currentState.production_list){
+        for(auto it = best_build.end(); it != best_build.begin();){
+            --it;
+            Action& action = *it;
+            if(entry->producee->class_id() == action.entity_to_be_built_id){
+                best_build.erase(it);
+                break;
+            }
+        }
+    }
+    return scenario == Scenario::Push ? sim.currentState.entitymap[target_id]->size()
+                                        : sim.currentState.time_tick;
 }
 
 template<Scenario scenario, Race gamerace>
@@ -453,7 +473,6 @@ void optimize(const GameState& initialState)
     std::srand(ms.count());
     sim.currentState = initialState;
     best_score = mcts<scenario>(sim);
-    std::cout << best_score << "\n";
     json initial_units;
 
     for (std::size_t i = 0; i < 64; ++i) {
@@ -471,14 +490,18 @@ void optimize(const GameState& initialState)
     for(Action& a : best_build){
         sim.step(a.entity_to_be_built_id, a.chrono_target_class, a.chrono_target_id);
         if((scenario == Scenario::Push && sim.currentState.time_tick == leaf_qualifier)
-            || scenario == Scenario::Rush && sim.currentState.entitymap[target_id]->size() == leaf_qualifier)
+            || (scenario == Scenario::Rush && sim.currentState.entitymap[target_id]->size() == leaf_qualifier))
             goto donedone;
         for(int i = 0;i < a.skips;i++){
             sim.step(-1, -1, -1);
             if((scenario == Scenario::Push && sim.currentState.time_tick == leaf_qualifier)
-                || scenario == Scenario::Rush && sim.currentState.entitymap[target_id]->size() == leaf_qualifier)
+                || (scenario == Scenario::Rush && sim.currentState.entitymap[target_id]->size() == leaf_qualifier))
                 goto donedone;
         }
+    }
+    while(!((scenario == Scenario::Push && sim.currentState.time_tick == leaf_qualifier)
+                || (scenario == Scenario::Rush && sim.currentState.entitymap[target_id]->size() == leaf_qualifier))){
+        sim.step(-1, -1, -1);
     }
     donedone:
     json output;

@@ -1,0 +1,1 @@
+$(dirname $0)/build/optimize $1 $2 $3
