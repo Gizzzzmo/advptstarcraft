@@ -425,6 +425,7 @@ void Simulator<gamerace>::step(int entity_id, int cast_target_class_id, int cast
                 special_event["triggeredBy"] = caster->id();
                 special_event["name"] = "chronoboost";
                 special_event["targetBuilding"] = target->id();
+                events.push_back(special_event);
             }
             target->chrono_boost(currentState);
             for(std::shared_ptr<ProductionEntry>& entry : target->producees){
