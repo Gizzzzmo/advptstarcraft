@@ -99,5 +99,5 @@ Simulator(const std::array<EntityMeta, 64>& meta_map,
     void step(int entity_id, int cast_target_class_id, int cast_target_obj_id);
 //Propagates game one time step
 
-    inline bool worker_distribution_well_defined();
+    bool worker_distribution_well_defined();
 };

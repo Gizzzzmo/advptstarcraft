@@ -226,7 +226,7 @@ inline bool Simulator<gamerace>::update_worker_distribution(std::vector<int>& li
 }
 
 template<Race gamerace>
-inline bool Simulator<gamerace>::worker_distribution_well_defined(){
+bool Simulator<gamerace>::worker_distribution_well_defined(){
     int cost_mins = 0, cost_gas = 0;
     int gas = (int) currentState.gas;
     int mins = (int) currentState.minerals;
