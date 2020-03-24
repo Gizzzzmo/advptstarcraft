@@ -8,8 +8,18 @@ producee(producee), producer(producer), time_done((state.time_tick + producee->b
 ProductionEntry::ProductionEntry(const ProductionEntry& entry, const std::map<std::shared_ptr<Entity>, std::shared_ptr<Entity>> translation_map):
     time_done(entry.time_done),
     chrono_boosted_until(entry.chrono_boosted_until),
-    producer(translation_map.find(entry.producer)->second),
-    producee(new Entity(*entry.producee)){}
+    producee(new Entity(*entry.producee)){
+
+        if(entry.second_producee)
+            second_producee = std::shared_ptr<Entity>(new Entity(*entry.producee));
+
+        auto kv = translation_map.find(entry.producer);
+        if(kv != translation_map.end())
+            producer = std::shared_ptr<Entity>(kv->second);
+        else{
+            producer = std::shared_ptr<Entity>(new Entity(*entry.producer));
+        }
+    }
 
 void ProductionEntry::chrono_boost(GameState& state, unsigned int until){
     if(chrono_boosted_until > time_done)return;
