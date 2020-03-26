@@ -417,20 +417,23 @@ void Simulator<gamerace>::step(int entity_id, int cast_target_class_id, int cast
         }
         if(target){
             auto caster = get_caster();
-            caster->cast_if_possible();
-            if(is_recording){
-                generate_json = true;
-                json special_event;
-                special_event["type"] = "special";
-                special_event["triggeredBy"] = caster->id();
-                special_event["name"] = "chronoboost";
-                special_event["targetBuilding"] = target->id();
-                events.push_back(special_event);
+            if(caster){
+                caster->cast_if_possible();
+                if(is_recording){
+                    generate_json = true;
+                    json special_event;
+                    special_event["type"] = "special";
+                    special_event["triggeredBy"] = caster->id();
+                    special_event["name"] = "chronoboost";
+                    special_event["targetBuilding"] = target->id();
+                    events.push_back(special_event);
+                }
+                target->chrono_boost(currentState);
+                for(std::shared_ptr<ProductionEntry>& entry : target->producees){
+                    entry->chrono_boost(currentState, target->get_chrono_until());
+                }
             }
-            target->chrono_boost(currentState);
-            for(std::shared_ptr<ProductionEntry>& entry : target->producees){
-                entry->chrono_boost(currentState, target->get_chrono_until());
-            }
+            else std::cout << "failed to cast chronoboost on " << target->name() << "\n";
         }
             
         //special_event["name"] = "chronoboost";

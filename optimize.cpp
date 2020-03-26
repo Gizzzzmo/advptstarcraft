@@ -301,7 +301,7 @@ int mcts(Simulator<gamerace>& sim){
             --it;
             Action& action = *it;
             if(tobebuilt == action.entity_to_be_built_id){
-                best_build.erase(it);
+                action.entity_to_be_built_id = -1;
                 break;
             }
         }
@@ -311,7 +311,7 @@ int mcts(Simulator<gamerace>& sim){
             --it;
             Action& action = *it;
             if(entry->producee->class_id() == action.entity_to_be_built_id){
-                best_build.erase(it);
+                action.entity_to_be_built_id = -1;
                 break;
             }
         }

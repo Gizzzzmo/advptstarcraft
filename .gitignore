@@ -4,3 +4,4 @@ forward
 compile_commands.json
 build
 unit_db.csv
+*.zip
